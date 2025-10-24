@@ -2289,204 +2289,208 @@ class LoginBlocker {
 
     // Wykres prób logowania w czasie
     private function display_attempts_chart($period) {
-        global $wpdb;
-        
-        $start_date = date('Y-m-d', strtotime("-$period days"));
-        
-        $daily_stats = $wpdb->get_results("
-            SELECT DATE(last_attempt) as date, 
-                   COUNT(*) as attempts,
-                   COUNT(DISTINCT ip_address) as unique_ips,
-                   SUM(is_blocked) as blocked
-            FROM {$this->table_name} 
-            WHERE last_attempt >= '$start_date'
-            GROUP BY DATE(last_attempt)
-            ORDER BY date ASC
-        ");
-        
-        if (empty($daily_stats)) {
-            echo '<p>Brak danych dla wybranego okresu.</p>';
-            return;
-        }
-        
-        $dates = array();
-        $attempts = array();
-        $blocked = array();
-        $unique_ips = array();
-        
-        foreach ($daily_stats as $stat) {
-            $dates[] = date('d.m', strtotime($stat->date));
-            $attempts[] = $stat->attempts;
-            $blocked[] = $stat->blocked;
-            $unique_ips[] = $stat->unique_ips;
-        }
-        
-        echo '
-        <canvas id="attemptsChart" width="400" height="200"></canvas>
-        <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var ctx = document.getElementById("attemptsChart").getContext("2d");
-            var chart = new Chart(ctx, {
-                type: "line",
-                data: {
-                    labels: ' . json_encode($dates) . ',
-                    datasets: [
-                        {
-                            label: "Wszystkie próby",
-                            data: ' . json_encode($attempts) . ',
-                            borderColor: "#0073aa",
-                            backgroundColor: "rgba(0, 115, 170, 0.1)",
-                            tension: 0.4
-                        },
-                        {
-                            label: "Zablokowane",
-                            data: ' . json_encode($blocked) . ',
-                            borderColor: "#d63638",
-                            backgroundColor: "rgba(214, 54, 56, 0.1)",
-                            tension: 0.4
-                        },
-                        {
-                            label: "Unikalne IP",
-                            data: ' . json_encode($unique_ips) . ',
-                            borderColor: "#00a32a",
-                            backgroundColor: "rgba(0, 163, 42, 0.1)",
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: "top"
-                        }
+    global $wpdb;
+    
+    $start_date = date('Y-m-d', strtotime("-$period days"));
+    
+    // ZABEZPIECZONE ZAPYTANIE
+    $daily_stats = $wpdb->get_results($wpdb->prepare("
+        SELECT DATE(last_attempt) as date, 
+               COUNT(*) as attempts,
+               COUNT(DISTINCT ip_address) as unique_ips,
+               SUM(is_blocked) as blocked
+        FROM {$this->table_name} 
+        WHERE last_attempt >= %s
+        GROUP BY DATE(last_attempt)
+        ORDER BY date ASC
+    ", $start_date));
+    
+    if (empty($daily_stats)) {
+        echo '<p>Brak danych dla wybranego okresu.</p>';
+        return;
+    }
+    
+    $dates = array();
+    $attempts = array();
+    $blocked = array();
+    $unique_ips = array();
+    
+    foreach ($daily_stats as $stat) {
+        $dates[] = date('d.m', strtotime($stat->date));
+        $attempts[] = $stat->attempts;
+        $blocked[] = $stat->blocked;
+        $unique_ips[] = $stat->unique_ips;
+    }
+    
+    echo '
+    <canvas id="attemptsChart" width="400" height="200"></canvas>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var ctx = document.getElementById("attemptsChart").getContext("2d");
+        var chart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: ' . json_encode($dates) . ',
+                datasets: [
+                    {
+                        label: "Wszystkie próby",
+                        data: ' . json_encode($attempts) . ',
+                        borderColor: "#0073aa",
+                        backgroundColor: "rgba(0, 115, 170, 0.1)",
+                        tension: 0.4
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+                    {
+                        label: "Zablokowane",
+                        data: ' . json_encode($blocked) . ',
+                        borderColor: "#d63638",
+                        backgroundColor: "rgba(214, 54, 56, 0.1)",
+                        tension: 0.4
+                    },
+                    {
+                        label: "Unikalne IP",
+                        data: ' . json_encode($unique_ips) . ',
+                        borderColor: "#00a32a",
+                        backgroundColor: "rgba(0, 163, 42, 0.1)",
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: "top"
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
                     }
                 }
-            });
+            }
         });
-        </script>';
-    }
+    });
+    </script>';
+}
 
     // Statystyki krajów - kompaktowa wersja
     private function display_country_stats($period) {
-        global $wpdb;
-        
-        $start_date = date('Y-m-d', strtotime("-$period days"));
-        
-        $country_stats = $wpdb->get_results("
-            SELECT country_code, country_name, 
-                   COUNT(*) as attempts,
-                   COUNT(DISTINCT ip_address) as unique_ips
-            FROM {$this->table_name} 
-            WHERE country_code != '' AND last_attempt >= '$start_date'
-            GROUP BY country_code, country_name
-            ORDER BY attempts DESC
-            LIMIT 8
-        ");
-        
-        if (empty($country_stats)) {
-            echo '<p>Brak danych geolokalizacji.</p>';
-            return;
-        }
-        
-        echo '<table class="wp-list-table widefat fixed striped" style="font-size: 12px;">';
-        echo '<thead><tr><th>Kraj</th><th>Próby</th><th>IP</th></tr></thead>';
-        echo '<tbody>';
-        
-        foreach ($country_stats as $country) {
-            $country_code_lower = strtolower($country->country_code);
-            $flag_url = "https://flagcdn.com/16x12/{$country_code_lower}.png";
-            
-            echo '<tr>';
-            echo '<td><img src="' . $flag_url . '" style="width: 16px; height: 12px; margin-right: 5px;" alt="' . $country->country_code . '"> ' . esc_html($country->country_name) . '</td>';
-            echo '<td>' . number_format($country->attempts) . '</td>';
-            echo '<td>' . number_format($country->unique_ips) . '</td>';
-            echo '</tr>';
-        }
-        
-        echo '</tbody></table>';
+    global $wpdb;
+    
+    $start_date = date('Y-m-d', strtotime("-$period days"));
+    
+    // ZABEZPIECZONE ZAPYTANIE
+    $country_stats = $wpdb->get_results($wpdb->prepare("
+        SELECT country_code, country_name, 
+               COUNT(*) as attempts,
+               COUNT(DISTINCT ip_address) as unique_ips
+        FROM {$this->table_name} 
+        WHERE country_code != '' AND last_attempt >= %s
+        GROUP BY country_code, country_name
+        ORDER BY attempts DESC
+        LIMIT 8
+    ", $start_date));
+    
+    if (empty($country_stats)) {
+        echo '<p>Brak danych geolokalizacji.</p>';
+        return;
     }
+    
+    echo '<table class="wp-list-table widefat fixed striped" style="font-size: 12px;">';
+    echo '<thead><tr><th>Kraj</th><th>Próby</th><th>IP</th></tr></thead>';
+    echo '<tbody>';
+    
+    foreach ($country_stats as $country) {
+        $country_code_lower = strtolower($country->country_code);
+        $flag_url = "https://flagcdn.com/16x12/{$country_code_lower}.png";
+        
+        echo '<tr>';
+        echo '<td><img src="' . esc_url($flag_url) . '" style="width: 16px; height: 12px; margin-right: 5px;" alt="' . esc_attr($country->country_code) . '"> ' . esc_html($country->country_name) . '</td>';
+        echo '<td>' . number_format($country->attempts) . '</td>';
+        echo '<td>' . number_format($country->unique_ips) . '</td>';
+        echo '</tr>';
+    }
+    
+    echo '</tbody></table>';
+}
 
     // Najczęściej atakowani użytkownicy - kompaktowa
     private function display_top_users($period) {
-        global $wpdb;
-        
-        $start_date = date('Y-m-d', strtotime("-$period days"));
-        
-        $top_users = $wpdb->get_results("
-            SELECT username, 
-                   COUNT(*) as attempts,
-                   COUNT(DISTINCT ip_address) as unique_attackers
-            FROM {$this->table_name} 
-            WHERE username IS NOT NULL AND last_attempt >= '$start_date'
-            GROUP BY username 
-            ORDER BY attempts DESC 
-            LIMIT 8
-        ");
-        
-        if (empty($top_users)) {
-            echo '<p>Brak danych.</p>';
-            return;
-        }
-        
-        echo '<table class="wp-list-table widefat fixed striped" style="font-size: 12px;">';
-        echo '<thead><tr><th>Użytkownik</th><th>Próby</th><th>Atakujący</th></tr></thead>';
-        echo '<tbody>';
-        
-        foreach ($top_users as $user) {
-            echo '<tr>';
-            echo '<td>' . esc_html($user->username) . '</td>';
-            echo '<td>' . number_format($user->attempts) . '</td>';
-            echo '<td>' . number_format($user->unique_attackers) . '</td>';
-            echo '</tr>';
-        }
-        
-        echo '</tbody></table>';
+    global $wpdb;
+    
+    $start_date = date('Y-m-d', strtotime("-$period days"));
+    
+    // ZABEZPIECZONE ZAPYTANIE
+    $top_users = $wpdb->get_results($wpdb->prepare("
+        SELECT username, 
+               COUNT(*) as attempts,
+               COUNT(DISTINCT ip_address) as unique_attackers
+        FROM {$this->table_name} 
+        WHERE username IS NOT NULL AND last_attempt >= %s
+        GROUP BY username 
+        ORDER BY attempts DESC 
+        LIMIT 8
+    ", $start_date));
+    
+    if (empty($top_users)) {
+        echo '<p>Brak danych.</p>';
+        return;
     }
+    
+    echo '<table class="wp-list-table widefat fixed striped" style="font-size: 12px;">';
+    echo '<thead><tr><th>Użytkownik</th><th>Próby</th><th>Atakujący</th></tr></thead>';
+    echo '<tbody>';
+    
+    foreach ($top_users as $user) {
+        echo '<tr>';
+        echo '<td>' . esc_html($user->username) . '</td>';
+        echo '<td>' . number_format($user->attempts) . '</td>';
+        echo '<td>' . number_format($user->unique_attackers) . '</td>';
+        echo '</tr>';
+    }
+    
+    echo '</tbody></table>';
+}
 
     // Najaktywniejsze IP - kompaktowa
     private function display_top_ips($period) {
-        global $wpdb;
-        
-        $start_date = date('Y-m-d', strtotime("-$period days"));
-        
-        $top_ips = $wpdb->get_results("
-            SELECT ip_address, country_code, city, 
-                   COUNT(*) as attempts,
-                   MAX(is_blocked) as is_blocked
-            FROM {$this->table_name} 
-            WHERE last_attempt >= '$start_date'
-            GROUP BY ip_address, country_code, city
-            ORDER BY attempts DESC 
-            LIMIT 8
-        ");
-        
-        if (empty($top_ips)) {
-            echo '<p>Brak danych.</p>';
-            return;
-        }
-        
-        echo '<table class="wp-list-table widefat fixed striped" style="font-size: 12px;">';
-        echo '<thead><tr><th>IP</th><th>Próby</th><th>Status</th></tr></thead>';
-        echo '<tbody>';
-        
-        foreach ($top_ips as $ip) {
-            $status = $ip->is_blocked ? '<span style="color: red; font-size: 11px;">BLOKADA</span>' : '<span style="color: green; font-size: 11px;">aktywny</span>';
-            
-            echo '<tr>';
-            echo '<td style="font-family: monospace; font-size: 11px;">' . esc_html($ip->ip_address) . '</td>';
-            echo '<td>' . number_format($ip->attempts) . '</td>';
-            echo '<td>' . $status . '</td>';
-            echo '</tr>';
-        }
-        
-        echo '</tbody></table>';
+    global $wpdb;
+    
+    $start_date = date('Y-m-d', strtotime("-$period days"));
+    
+    // ZABEZPIECZONE ZAPYTANIE
+    $top_ips = $wpdb->get_results($wpdb->prepare("
+        SELECT ip_address, country_code, city, 
+               COUNT(*) as attempts,
+               MAX(is_blocked) as is_blocked
+        FROM {$this->table_name} 
+        WHERE last_attempt >= %s
+        GROUP BY ip_address, country_code, city
+        ORDER BY attempts DESC 
+        LIMIT 8
+    ", $start_date));
+    
+    if (empty($top_ips)) {
+        echo '<p>Brak danych.</p>';
+        return;
     }
+    
+    echo '<table class="wp-list-table widefat fixed striped" style="font-size: 12px;">';
+    echo '<thead><tr><th>IP</th><th>Próby</th><th>Status</th></tr></thead>';
+    echo '<tbody>';
+    
+    foreach ($top_ips as $ip) {
+        $status = $ip->is_blocked ? '<span style="color: red; font-size: 11px;">BLOKADA</span>' : '<span style="color: green; font-size: 11px;">aktywny</span>';
+        
+        echo '<tr>';
+        echo '<td style="font-family: monospace; font-size: 11px;">' . esc_html($ip->ip_address) . '</td>';
+        echo '<td>' . number_format($ip->attempts) . '</td>';
+        echo '<td>' . $status . '</td>';
+        echo '</tr>';
+    }
+    
+    echo '</tbody></table>';
+}
 
     public function enqueue_admin_scripts($hook) {
     if (strpos($hook, 'login-blocker') === false) return;
@@ -2522,70 +2526,71 @@ class LoginBlocker {
 
     // Mapa ataków
     private function display_attack_map($period) {
-        global $wpdb;
-        
-        $start_date = date('Y-m-d', strtotime("-$period days"));
-        
-        $attack_locations = $wpdb->get_results("
-            SELECT country_code, country_name, city, latitude, longitude,
-                   COUNT(*) as attempts,
-                   COUNT(DISTINCT ip_address) as unique_ips
-            FROM {$this->table_name} 
-            WHERE country_code != '' AND latitude IS NOT NULL AND longitude IS NOT NULL AND last_attempt >= '$start_date'
-            GROUP BY country_code, country_name, city, latitude, longitude
-            ORDER BY attempts DESC
-            LIMIT 50
-        ");
-        
-        if (empty($attack_locations)) {
-            echo '<p>Brak danych geolokalizacji do wyświetlenia mapy.</p>';
-            return;
-        }
-        
-        $locations_data = array();
-        foreach ($attack_locations as $location) {
-            $locations_data[] = array(
-                'lat' => floatval($location->latitude),
-                'lng' => floatval($location->longitude),
-                'country' => $location->country_name,
-                'city' => $location->city,
-                'attempts' => $location->attempts,
-                'unique_ips' => $location->unique_ips
-            );
-        }
-        
-        echo '
-        <div id="attackMap" style="height: 400px; width: 100%;"></div>
-        <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var map = L.map("attackMap").setView([20, 0], 2);
-            
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "© OpenStreetMap contributors"
-            }).addTo(map);
-            
-            var locations = ' . json_encode($locations_data) . ';
-            
-            locations.forEach(function(location) {
-                var popupContent = "<strong>" + location.city + ", " + location.country + "</strong><br>" +
-                                  "Próby: " + location.attempts + "<br>" +
-                                  "Unikalne IP: " + location.unique_ips;
-                
-                var color = location.attempts > 100 ? "red" : 
-                           location.attempts > 50 ? "orange" : "green";
-                
-                L.circleMarker([location.lat, location.lng], {
-                    color: color,
-                    fillColor: color,
-                    fillOpacity: 0.5,
-                    radius: Math.min(location.attempts / 10, 20)
-                }).addTo(map).bindPopup(popupContent);
-            });
-        });
-        </script>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>';
+    global $wpdb;
+    
+    $start_date = date('Y-m-d', strtotime("-$period days"));
+    
+    // ZABEZPIECZONE ZAPYTANIE
+    $attack_locations = $wpdb->get_results($wpdb->prepare("
+        SELECT country_code, country_name, city, latitude, longitude,
+               COUNT(*) as attempts,
+               COUNT(DISTINCT ip_address) as unique_ips
+        FROM {$this->table_name} 
+        WHERE country_code != '' AND latitude IS NOT NULL AND longitude IS NOT NULL AND last_attempt >= %s
+        GROUP BY country_code, country_name, city, latitude, longitude
+        ORDER BY attempts DESC
+        LIMIT 50
+    ", $start_date));
+    
+    if (empty($attack_locations)) {
+        echo '<p>Brak danych geolokalizacji do wyświetlenia mapy.</p>';
+        return;
     }
+    
+    $locations_data = array();
+    foreach ($attack_locations as $location) {
+        $locations_data[] = array(
+            'lat' => floatval($location->latitude),
+            'lng' => floatval($location->longitude),
+            'country' => $location->country_name,
+            'city' => $location->city,
+            'attempts' => $location->attempts,
+            'unique_ips' => $location->unique_ips
+        );
+    }
+    
+    echo '
+    <div id="attackMap" style="height: 400px; width: 100%;"></div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var map = L.map("attackMap").setView([20, 0], 2);
+        
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap contributors"
+        }).addTo(map);
+        
+        var locations = ' . wp_json_encode($locations_data) . ';
+        
+        locations.forEach(function(location) {
+            var popupContent = "<strong>" + location.city + ", " + location.country + "</strong><br>" +
+                              "Próby: " + location.attempts + "<br>" +
+                              "Unikalne IP: " + location.unique_ips;
+            
+            var color = location.attempts > 100 ? "red" : 
+                       location.attempts > 50 ? "orange" : "green";
+            
+            L.circleMarker([location.lat, location.lng], {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.5,
+                radius: Math.min(location.attempts / 10, 20)
+            }).addTo(map).bindPopup(popupContent);
+        });
+    });
+    </script>
+    <link rel="stylesheet" href="' . esc_url('https://unpkg.com/leaflet@1.7.1/dist/leaflet.css') . '" />
+    <script src="' . esc_url('https://unpkg.com/leaflet@1.7.1/dist/leaflet.js') . '"></script>';
+}
 
 /**
  * Inicjalizacja systemu aktualizacji
