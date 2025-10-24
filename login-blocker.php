@@ -276,6 +276,7 @@ class LoginBlocker {
     }
     
     // Geolokalizacja IP
+        // Geolokalizacja IP
     private function get_ip_geolocation($ip) {
         try {
             // Pomijanie prywatnych IP
@@ -300,7 +301,10 @@ class LoginBlocker {
                 
                 // Try ip-api.com (free)
                 $response = wp_remote_get("http://ip-api.com/json/{$ip}?fields=status,message,country,countryCode,city,region,isp,lat,lon,query", array(
-                    'timeout' => 5
+                    'timeout' => 5,
+                    'redirection' => 2,
+                    'httpversion' => '1.1',
+                    'user-agent' => 'WordPress Login Blocker Plugin/' . LOGIN_BLOCKER_VERSION
                 ));
                 
                 if (is_wp_error($response)) {
@@ -309,17 +313,17 @@ class LoginBlocker {
                         'error' => $response->get_error_message()
                     ));
                 } else {
-                    $data = json_decode($response['body'], true);
+                    $data = json_decode(wp_remote_retrieve_body($response), true);
                     
                     if (isset($data['status']) && $data['status'] === 'success') {
                         $geolocation = array(
-                            'country_code' => $data['countryCode'] ?? '',
-                            'country_name' => $data['country'] ?? '',
-                            'city' => $data['city'] ?? '',
-                            'region' => $data['regionName'] ?? '',
-                            'isp' => $data['isp'] ?? '',
-                            'latitude' => $data['lat'] ?? null,
-                            'longitude' => $data['lon'] ?? null
+                            'country_code' => sanitize_text_field($data['countryCode'] ?? ''),
+                            'country_name' => sanitize_text_field($data['country'] ?? ''),
+                            'city' => sanitize_text_field($data['city'] ?? ''),
+                            'region' => sanitize_text_field($data['regionName'] ?? ''),
+                            'isp' => sanitize_text_field($data['isp'] ?? ''),
+                            'latitude' => floatval($data['lat'] ?? null),
+                            'longitude' => floatval($data['lon'] ?? null)
                         );
                         
                         set_transient($transient_key, $geolocation, WEEK_IN_SECONDS);
@@ -338,7 +342,9 @@ class LoginBlocker {
                     
                     $response = wp_remote_get("https://ipapi.co/{$ip}/json/", array(
                         'timeout' => 5,
-                        'headers' => array('User-Agent' => 'WordPress-Login-Blocker-Plugin/1.0')
+                        'headers' => array('User-Agent' => 'WordPress-Login-Blocker-Plugin/1.0'),
+                        'redirection' => 2,
+                        'httpversion' => '1.1'
                     ));
                     
                     if (is_wp_error($response)) {
@@ -347,17 +353,17 @@ class LoginBlocker {
                             'error' => $response->get_error_message()
                         ));
                     } else {
-                        $data = json_decode($response['body'], true);
+                        $data = json_decode(wp_remote_retrieve_body($response), true);
                         
                         if (!isset($data['error'])) {
                             $geolocation = array(
-                                'country_code' => $data['country_code'] ?? '',
-                                'country_name' => $data['country_name'] ?? '',
-                                'city' => $data['city'] ?? '',
-                                'region' => $data['region'] ?? '',
-                                'isp' => $data['org'] ?? '',
-                                'latitude' => $data['latitude'] ?? null,
-                                'longitude' => $data['longitude'] ?? null
+                                'country_code' => sanitize_text_field($data['country_code'] ?? ''),
+                                'country_name' => sanitize_text_field($data['country_name'] ?? ''),
+                                'city' => sanitize_text_field($data['city'] ?? ''),
+                                'region' => sanitize_text_field($data['region'] ?? ''),
+                                'isp' => sanitize_text_field($data['org'] ?? ''),
+                                'latitude' => floatval($data['latitude'] ?? null),
+                                'longitude' => floatval($data['longitude'] ?? null)
                             );
                             
                             set_transient($transient_key, $geolocation, WEEK_IN_SECONDS);
@@ -998,7 +1004,7 @@ class LoginBlocker {
                                     <th style="width: 15%;">Akcje</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                                                        <tbody>
                                 <?php foreach ($blocked_ips as $ip): ?>
                                     <tr>
                                         <td><?php echo esc_html($ip->ip_address); ?></td>
@@ -1012,7 +1018,7 @@ class LoginBlocker {
                                                     $country_code_lower = strtolower($ip->country_code);
                                                     $flag_url = "https://flagcdn.com/24x18/{$country_code_lower}.png";
                                                 ?>
-                                                <img src="<?php echo $flag_url; ?>" alt="<?php echo esc_attr($ip->country_code); ?>" title="<?php echo esc_attr($ip->country_name); ?>" style="width: 24px; height: 18px;">
+                                                <img src="<?php echo esc_url($flag_url); ?>" alt="<?php echo esc_attr($ip->country_code); ?>" title="<?php echo esc_attr($ip->country_name); ?>" style="width: 24px; height: 18px;">
                                             <?php else: ?>
                                                 <span style="color: #999;">—</span>
                                             <?php endif; ?>
@@ -1687,7 +1693,18 @@ class LoginBlocker {
     }
 
     // Wysyłanie przez SMTP
+        // Wysyłanie przez SMTP
     private function send_email_via_smtp($to, $subject, $message) {
+        // WALIDACJA DANYCH WEJŚCIOWYCH
+        $to = sanitize_email($to);
+        $subject = sanitize_text_field($subject);
+        $message = wp_kses_post($message); // Bezpieczne czyszczenie HTML
+
+        if (!is_email($to)) {
+            $this->log_error("Nieprawidłowy adres email w SMTP", array('to' => $to));
+            return false;
+        }
+
         $smtp_host = get_option('login_blocker_smtp_host');
         $smtp_port = get_option('login_blocker_smtp_port', 587);
         $smtp_username = get_option('login_blocker_smtp_username');
@@ -1714,10 +1731,10 @@ class LoginBlocker {
             
             // Konfiguracja SMTP
             $mail->isSMTP();
-            $mail->Host = $smtp_host;
-            $mail->Port = $smtp_port;
+            $mail->Host = sanitize_text_field($smtp_host);
+            $mail->Port = intval($smtp_port);
             $mail->SMTPAuth = true;
-            $mail->Username = $smtp_username;
+            $mail->Username = sanitize_text_field($smtp_username);
             $mail->Password = $smtp_password;
             
             // Szyfrowanie
@@ -1729,7 +1746,7 @@ class LoginBlocker {
             
             // Opcje
             $mail->CharSet = 'UTF-8';
-            $mail->setFrom($smtp_username, get_bloginfo('name'));
+            $mail->setFrom(sanitize_email($smtp_username), sanitize_text_field(get_bloginfo('name')));
             $mail->addAddress($to);
             $mail->Subject = $subject;
             $mail->Body = $message;
