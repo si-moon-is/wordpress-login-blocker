@@ -18,6 +18,12 @@ function lb_activation_check() {
         wp_die('This plugin requires PHP 7.4 or higher.');
     }
 }
+function lb_secure_ajax_handler() {
+    if (!current_user_can('manage_options')) {
+        wp_die('Unauthorized');
+    }
+    check_ajax_referer('lb_ajax_nonce', 'nonce');
+}
 
 // Definiowanie stałych
 define('LOGIN_BLOCKER_VERSION', '1.0.0');
