@@ -1,275 +1,108 @@
-# Login Blocker Polish Translation
-# Author: Szymon Kościkiewicz
 msgid ""
 msgstr ""
-"Project-Id-Version: Login Blocker 1.0.0\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-15 12:00+0000\n"
-"PO-Revision-Date: 2024-01-15 12:00+0000\n"
-"Last-Translator: Szymon Kościkiewicz\n"
-"Language-Team: Polish\n"
+"Project-Id-Version: WordPress Login Blocker\n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"Last-Translator: Your Name <email@example.com>\n"
+"Language-Team: Polish <your-team@example.com>\n"
 "Language: pl_PL\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: login-blocker.php:10
 msgid "Login Blocker"
-msgstr "Login Blocker"
+msgstr "Blokada Logowania"
 
-#: login-blocker.php:11
-msgid "Blokuje IP po nieudanych próbach logowania z własnym panelem administracyjnym"
-msgstr "Blokuje IP po nieudanych próbach logowania z własnym panelem administracyjnym"
+msgid "Blocks unauthorized login attempts to WordPress"
+msgstr "Blokuje nieautoryzowane próby logowania do WordPress"
 
-# Teksty ogólne
+msgid "Login Attempts"
+msgstr "Próby Logowania"
+
+msgid "Blocked IPs"
+msgstr "Zablokowane IP"
+
+msgid "Settings"
+msgstr "Ustawienia"
+
 msgid "IP Address"
 msgstr "Adres IP"
 
 msgid "Username"
 msgstr "Nazwa użytkownika"
 
-msgid "Attempts"
-msgstr "Próby"
-
-msgid "Last Attempt"
-msgstr "Ostatnia próba"
-
-msgid "Blocked Until"
-msgstr "Zablokowany do"
-
-msgid "Country"
-msgstr "Kraj"
-
-msgid "Actions"
-msgstr "Akcje"
+msgid "Date"
+msgstr "Data"
 
 msgid "Status"
 msgstr "Status"
 
+msgid "Blocked"
+msgstr "Zablokowany"
+
+msgid "Failed"
+msgstr "Nieudany"
+
+msgid "Country"
+msgstr "Kraj"
+
+msgid "Export CSV"
+msgstr "Eksportuj CSV"
+
+msgid "Block IP"
+msgstr "Zablokuj IP"
+
+msgid "Enter IP address to block"
+msgstr "Wprowadź adres IP do zablokowania"
+
+msgid "Add"
+msgstr "Dodaj"
+
 msgid "Unblock"
 msgstr "Odblokuj"
 
-msgid "Delete"
-msgstr "Usuń"
-
-# Komunikaty
-msgid "IP unblocked."
-msgstr "IP odblokowane."
-
-msgid "All IPs unblocked."
-msgstr "Wszystkie IP odblokowane."
-
-msgid "Record deleted."
-msgstr "Rekord usunięty."
-
-msgid "All blocked records deleted."
-msgstr "Wszystkie zablokowane rekordy usunięte."
-
-msgid "All records deleted."
-msgstr "Wszystkie rekordy usunięte."
-
-# Komunikaty błędów
-msgid "Your IP has been blocked. Try again in %d minutes."
-msgstr "Twoje IP zostało zablokowane. Spróbuj ponownie za %d minut."
-
-msgid "Access from this IP address has been temporarily blocked. Remaining time: %s"
-msgstr "Dostęp z tego adresu IP został tymczasowo zablokowany. Pozostały czas: %s"
-
-# Tytuły stron
-msgid "Login Blocker - Blocked IPs"
-msgstr "Login Blocker - Zablokowane IP"
-
-msgid "Login Blocker - Statistics & Attempts"
-msgstr "Login Blocker - Statystyki & Próby"
-
-msgid "Login Blocker - Debug & Logs"
-msgstr "Login Blocker - Debug & Logi"
-
-msgid "Login Blocker - Settings"
-msgstr "Login Blocker - Ustawienia"
-
-# Ustawienia
 msgid "Maximum login attempts"
 msgstr "Maksymalna liczba prób logowania"
 
-msgid "Number of failed login attempts after which IP will be blocked"
-msgstr "Liczba nieudanych prób logowania po której IP zostanie zablokowane"
+msgid "Block duration (minutes)"
+msgstr "Czas blokady (minuty)"
 
-msgid "Block duration (in seconds)"
-msgstr "Czas blokady (w sekundach)"
-
-msgid "IP block time in seconds (3600 = 1 hour, 86400 = 24 hours)"
-msgstr "Czas blokady IP w sekundach (3600 = 1 godzina, 86400 = 24 godziny)"
-
-msgid "Debug mode"
-msgstr "Tryb debugowania"
-
-msgid "Enable: logs ALL events (DEBUG, INFO, WARNING, ERROR)<br>Disable: logs ONLY errors and warnings (WARNING, ERROR)"
-msgstr "Włącz: loguje WSZYSTKIE zdarzenia (DEBUG, INFO, WARNING, ERROR)<br>Wyłącz: loguje TYLKO błędy i ostrzeżenia (WARNING, ERROR)"
-
-msgid "Enable error email notifications"
-msgstr "Włącz powiadomienia email o błędach"
-
-msgid "Sends notifications to admin email when critical errors occur."
-msgstr "Wysyła powiadomienia na adres admina gdy wystąpią krytyczne błędy."
-
-# Ustawienia email
-msgid "Email Notification Settings"
-msgstr "Ustawienia Powiadomień Email"
-
-msgid "Configuration of email notifications about errors and attacks. If you don't configure your own SMTP, the default WordPress system will be used."
-msgstr "Konfiguracja powiadomień email o błędach i atakach. Jeśli nie skonfigurujesz własnego SMTP, zostanie użyty domyślny system WordPress."
+msgid "Enable email notifications"
+msgstr "Włącz powiadomienia email"
 
 msgid "Notification email"
-msgstr "Email do powiadomień"
+msgstr "Email powiadomień"
 
-msgid "Email address to which notifications will be sent (default: admin)"
-msgstr "Adres email na który będą wysyłane powiadomienia (domyślnie: admin)"
+msgid "Save Settings"
+msgstr "Zapisz Ustawienia"
 
-msgid "Use custom SMTP server"
-msgstr "Użyj własnego serwera SMTP"
+msgid "Settings saved successfully."
+msgstr "Ustawienia zapisane pomyślnie."
 
-msgid "Enable if you want to use your own mail server instead of the default WordPress system"
-msgstr "Włącz jeśli chcesz używać własnego serwera pocztowego zamiast domyślnego systemu WordPress"
+msgid "IP address blocked successfully."
+msgstr "Adres IP został zablokowany."
 
-msgid "SMTP server"
-msgstr "Serwer SMTP"
+msgid "IP address unblocked successfully."
+msgstr "Adres IP został odblokowany."
 
-msgid "SMTP server address"
-msgstr "Adres serwera SMTP"
+msgid "Failed login attempt from IP: %s"
+msgstr "Nieudana próba logowania z IP: %s"
 
-msgid "SMTP port"
-msgstr "Port SMTP"
+msgid "IP address %s has been blocked due to too many failed attempts."
+msgstr "Adres IP %s został zablokowany z powodu zbyt wielu nieudanych prób."
 
-msgid "SMTP server port (typically 587, 465 or 25)"
-msgstr "Port serwera SMTP (zazwyczaj 587, 465 lub 25)"
+msgid "Login Blocker Notification"
+msgstr "Powiadomienie Blokady Logowania"
 
-msgid "SMTP username"
-msgstr "Nazwa użytkownika SMTP"
+msgid "Invalid IP address format."
+msgstr "Nieprawidłowy format adresu IP."
 
-msgid "Username for SMTP server"
-msgstr "Nazwa użytkownika do serwera SMTP"
+msgid "IP address already blocked."
+msgstr "Adres IP jest już zablokowany."
 
-msgid "SMTP password"
-msgstr "Hasło SMTP"
+msgid "Error occurred while processing your request."
+msgstr "Wystąpił błąd podczas przetwarzania żądania."
 
-msgid "Password for SMTP server"
-msgstr "Hasło do serwera SMTP"
-
-msgid "Encryption"
-msgstr "Szyfrowanie"
-
-msgid "Encryption type (typically TLS for port 587, SSL for port 465)"
-msgstr "Typ szyfrowania (zazwyczaj TLS dla portu 587, SSL dla portu 465)"
-
-msgid "None"
-msgstr "Brak"
-
-msgid "SSL"
-msgstr "SSL"
-
-msgid "TLS"
-msgstr "TLS"
-
-msgid "Test notifications"
-msgstr "Test powiadomień"
-
-msgid "Send test email to check configuration"
-msgstr "Wyślij testowego emaila aby sprawdzić konfigurację"
-
-# Statystyki
-msgid "Filter statistics"
-msgstr "Filtruj statystyki"
-
-msgid "Time period:"
-msgstr "Okres czasu:"
-
-msgid "7 days"
-msgstr "7 dni"
-
-msgid "30 days"
-msgstr "30 dni"
-
-msgid "90 days"
-msgstr "90 dni"
-
-msgid "1 year"
-msgstr "1 rok"
-
-msgid "All attempts"
-msgstr "Wszystkie próby"
-
-msgid "Blocked attempts"
-msgstr "Zablokowane próby"
-
-msgid "Unique IPs"
-msgstr "Unikalne IP"
-
-msgid "Countries"
-msgstr "Kraje"
-
-msgid "Currently blocked"
-msgstr "Obecnie zablokowane"
-
-msgid "Average attempts per IP"
-msgstr "Średnio prób na IP"
-
-msgid "Recent login attempts (100)"
-msgstr "Ostatnie próby logowania (100)"
-
-msgid "Login attempts over time"
-msgstr "Próby logowania w czasie"
-
-msgid "Geographical distribution"
-msgstr "Rozkład geograficzny"
-
-msgid "Most attacked users"
-msgstr "Najczęściej atakowani użytkownicy"
-
-msgid "Most active IP addresses"
-msgstr "Najaktywniejsze adresy IP"
-
-msgid "Attack map"
-msgstr "Mapa ataków"
-
-# JavaScript
-msgid "Are you sure you want to unblock this IP?"
-msgstr "Czy na pewno chcesz odblokować to IP?"
-
-msgid "Are you sure you want to delete this record?"
-msgstr "Czy na pewno chcesz usunąć ten rekord?"
-
-msgid "Sending..."
-msgstr "Wysyłanie..."
-
-msgid "Success!"
-msgstr "Sukces!"
-
-msgid "Error!"
-msgstr "Błąd!"
-
-msgid "Test email sent successfully! Check your inbox."
-msgstr "Testowy email został wysłany pomyślnie! Sprawdź skrzynkę odbiorczą."
-
-msgid "Failed to send test email. Check configuration."
-msgstr "Nie udało się wysłać testowego emaila. Sprawdź konfigurację."
-
-msgid "No email address configured"
-msgstr "Brak skonfigurowanego adresu email"
-
-# JavaScript texts
-msgid "Sending..."
-msgstr "Wysyłanie..."
-
-msgid "Error!"
-msgstr "Błąd!"
-
-msgid "Success!"
-msgstr "Sukces!"
-
-msgid "Are you sure you want to unblock"
-msgstr "Czy na pewno chcesz odblokować"
-
-msgid "Are you sure you want to delete this record?"
-msgstr "Czy na pewno chcesz usunąć ten rekord?"
+msgid "No data to export."
+msgstr "Brak danych do eksportu."
