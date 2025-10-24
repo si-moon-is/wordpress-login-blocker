@@ -18,6 +18,7 @@ function lb_activation_check() {
         wp_die('This plugin requires PHP 7.4 or higher.');
     }
 }
+
 function lb_secure_ajax_handler() {
     if (!current_user_can('manage_options')) {
         wp_die('Unauthorized');
@@ -31,6 +32,16 @@ define('LOGIN_BLOCKER_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('LOGIN_BLOCKER_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('LOGIN_BLOCKER_DEBUG', get_option('login_blocker_debug_mode', false));
 define('LOGIN_BLOCKER_LOG_PATH', WP_CONTENT_DIR . '/logs/login-blocker/');
+
+// Inicjalizacja tłumaczeń
+add_action('plugins_loaded', 'login_blocker_load_textdomain');
+function login_blocker_load_textdomain() {
+    load_plugin_textdomain(
+        'login-blocker',
+        false,
+        dirname(plugin_basename(__FILE__)) . '/languages'
+    );
+}
 
 // Klasa główna wtyczki
 class LoginBlocker {
