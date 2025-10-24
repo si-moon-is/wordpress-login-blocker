@@ -11,12 +11,14 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
+# Główne
 msgid "Login Blocker"
 msgstr "Blokada Logowania"
 
 msgid "Blocks unauthorized login attempts to WordPress"
 msgstr "Blokuje nieautoryzowane próby logowania do WordPress"
 
+# Menu admina
 msgid "Login Attempts"
 msgstr "Próby Logowania"
 
@@ -26,6 +28,16 @@ msgstr "Zablokowane IP"
 msgid "Settings"
 msgstr "Ustawienia"
 
+msgid "Statistics & Attempts"
+msgstr "Statystyki & Próby"
+
+msgid "Debug & Logs"
+msgstr "Debug & Logi"
+
+msgid "Data Export"
+msgstr "Eksport Danych"
+
+# Tabele
 msgid "IP Address"
 msgstr "Adres IP"
 
@@ -47,6 +59,10 @@ msgstr "Nieudany"
 msgid "Country"
 msgstr "Kraj"
 
+msgid "Actions"
+msgstr "Akcje"
+
+# Przyciski i formularze
 msgid "Export CSV"
 msgstr "Eksportuj CSV"
 
@@ -62,6 +78,16 @@ msgstr "Dodaj"
 msgid "Unblock"
 msgstr "Odblokuj"
 
+msgid "Unblock All"
+msgstr "Odblokuj Wszystkie"
+
+msgid "Delete"
+msgstr "Usuń"
+
+msgid "Delete All"
+msgstr "Usuń Wszystkie"
+
+# Ustawienia
 msgid "Maximum login attempts"
 msgstr "Maksymalna liczba prób logowania"
 
@@ -77,6 +103,13 @@ msgstr "Email powiadomień"
 msgid "Save Settings"
 msgstr "Zapisz Ustawienia"
 
+msgid "Debug Mode"
+msgstr "Tryb Debugowania"
+
+msgid "Error Notifications"
+msgstr "Powiadomienia o Błędach"
+
+# Komunikaty sukcesu
 msgid "Settings saved successfully."
 msgstr "Ustawienia zapisane pomyślnie."
 
@@ -86,6 +119,13 @@ msgstr "Adres IP został zablokowany."
 msgid "IP address unblocked successfully."
 msgstr "Adres IP został odblokowany."
 
+msgid "All IPs unblocked successfully."
+msgstr "Wszystkie adresy IP zostały odblokowane."
+
+msgid "All records deleted successfully."
+msgstr "Wszystkie rekordy zostały usunięte."
+
+# Komunikaty błędów
 msgid "Failed login attempt from IP: %s"
 msgstr "Nieudana próba logowania z IP: %s"
 
@@ -106,3 +146,85 @@ msgstr "Wystąpił błąd podczas przetwarzania żądania."
 
 msgid "No data to export."
 msgstr "Brak danych do eksportu."
+
+msgid "Unauthorized"
+msgstr "Brak uprawnień"
+
+msgid "Security verification failed."
+msgstr "Weryfikacja bezpieczeństwa nie powiodła się."
+
+# Statystyki
+msgid "Currently blocked IPs"
+msgstr "Obecnie zablokowane IP"
+
+msgid "Recent attempts (1 hour)"
+msgstr "Ostatnie próby (1 godzina)"
+
+msgid "All attempts"
+msgstr "Wszystkie próby"
+
+msgid "Unique IPs"
+msgstr "Unikalne IP"
+
+msgid "Attack countries"
+msgstr "Kraje ataków"
+
+# Email
+msgid "Custom SMTP server"
+msgstr "Własny serwer SMTP"
+
+msgid "SMTP server"
+msgstr "Serwer SMTP"
+
+msgid "SMTP port"
+msgstr "Port SMTP"
+
+msgid "SMTP username"
+msgstr "Nazwa użytkownika SMTP"
+
+msgid "SMTP password"
+msgstr "Hasło SMTP"
+
+msgid "Encryption"
+msgstr "Szyfrowanie"
+
+msgid "Test notifications"
+msgstr "Test powiadomień"
+
+# Debug
+msgid "System Status"
+msgstr "Status Systemu"
+
+msgid "Debug Actions"
+msgstr "Akcje Debugowania"
+
+msgid "Log Files"
+msgstr "Pliki Logów"
+
+msgid "Log Content"
+msgstr "Zawartość Logu"
+
+msgid "Test Logging"
+msgstr "Testuj Logowanie"
+
+msgid "Clear All Logs"
+msgstr "Wyczyść Wszystkie Logi"
+
+# Komunikaty systemowe
+msgid "Your IP has been blocked. Try again in %d minutes."
+msgstr "Twoje IP zostało zablokowane. Spróbuj ponownie za %d minut."
+
+msgid "Security verification failed."
+msgstr "Weryfikacja bezpieczeństwa nie powiodła się."
+
+msgid "No permissions"
+msgstr "Brak uprawnień"
+
+msgid "Too many requests. Try again in a moment."
+msgstr "Zbyt wiele żądań. Spróbuj ponownie za chwilę."
+
+msgid "Test email sent successfully! Check your inbox."
+msgstr "Testowy email został wysłany pomyślnie! Sprawdź skrzynkę odbiorczą."
+
+msgid "Failed to send test email. Check configuration."
+msgstr "Nie udało się wysłać testowego emaila. Sprawdź konfigurację."
