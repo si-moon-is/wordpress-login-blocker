@@ -1,0 +1,8 @@
+{
+    "name": "si-moon-is/login-blocker",
+    "description": "WordPress plugin to block IPs after failed login attempts",
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=7.4"
+    }
+}
