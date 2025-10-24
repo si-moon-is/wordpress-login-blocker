@@ -33,16 +33,6 @@ define('LOGIN_BLOCKER_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('LOGIN_BLOCKER_DEBUG', get_option('login_blocker_debug_mode', false));
 define('LOGIN_BLOCKER_LOG_PATH', WP_CONTENT_DIR . '/logs/login-blocker/');
 
-// Inicjalizacja tłumaczeń
-add_action('plugins_loaded', 'login_blocker_load_textdomain');
-function login_blocker_load_textdomain() {
-    load_plugin_textdomain(
-        'login-blocker',
-        false,
-        dirname(plugin_basename(__FILE__)) . '/languages'
-    );
-}
-
 // Klasa główna wtyczki
 class LoginBlocker {
     
@@ -62,7 +52,9 @@ class LoginBlocker {
         $this->max_attempts = get_option('login_blocker_max_attempts', 5);
         $this->block_duration = get_option('login_blocker_block_duration', 3600);
         $this->debug_mode = LOGIN_BLOCKER_DEBUG;
-	$this->init_updater();
+		$this->init_updater();
+
+		add_action('plugins_loaded', array($this, 'load_textdomain'));
         
         // Rejestracja hooków
         add_action('plugins_loaded', array($this, 'init'));
