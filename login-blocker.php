@@ -244,23 +244,24 @@ class LoginBlocker {
     
     // Pobieranie adresu IP klienta
     private function get_client_ip() {
-        $ip_keys = array('HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'HTTP_CLIENT_IP', 'REMOTE_ADDR');
-        
-        foreach ($ip_keys as $key) {
-            if (!empty($_SERVER[$key])) {
-                $ip = $_SERVER[$key];
-                if (strpos($ip, ',') !== false) {
-                    $ips = explode(',', $ip);
-                    $ip = trim($ips[0]);
-                }
-                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                    return $ip;
-                }
+    $ip_keys = array('HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'HTTP_CLIENT_IP', 'REMOTE_ADDR');
+    
+    foreach ($ip_keys as $key) {
+        if (!empty($_SERVER[$key])) {
+            $ip = $_SERVER[$key];
+            if (strpos($ip, ',') !== false) {
+                $ips = explode(',', $ip);
+                $ip = trim($ips[0]);
+            }
+            // DODAJ TĘ LINIĘ - lepsza walidacja IP:
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                return $ip;
             }
         }
-        
-        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
+    
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
 
     private function is_ip_blocked($ip) {
         global $wpdb;
@@ -921,11 +922,13 @@ class LoginBlocker {
         
         // Pobieranie zablokowanych IP
         $blocked_ips = $wpdb->get_results(
-            "SELECT * FROM {$this->table_name} 
-             WHERE is_blocked = 1 {$search_sql}
-             ORDER BY last_attempt DESC 
-             LIMIT {$offset}, {$per_page}"
-        );
+    $wpdb->prepare("
+        SELECT * FROM {$this->table_name} 
+        WHERE is_blocked = 1 {$search_sql}
+        ORDER BY last_attempt DESC 
+        LIMIT %d, %d
+    ", $offset, $per_page)
+);
         
         // Liczba wszystkich zablokowanych IP
         $total_blocked = $wpdb->get_var(
@@ -2213,60 +2216,76 @@ class LoginBlocker {
     
     // Karty ze statystykami
     private function display_stats_cards($period) {
-        global $wpdb;
-        
-        $start_date = date('Y-m-d', strtotime("-$period days"));
-        
-        $stats = array(
-            'total_attempts' => $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name} WHERE last_attempt >= '$start_date'"),
-            'blocked_attempts' => $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name} WHERE is_blocked = 1 AND last_attempt >= '$start_date'"),
-            'unique_ips' => $wpdb->get_var("SELECT COUNT(DISTINCT ip_address) FROM {$this->table_name} WHERE last_attempt >= '$start_date'"),
-            'unique_countries' => $wpdb->get_var("SELECT COUNT(DISTINCT country_code) FROM {$this->table_name} WHERE country_code != '' AND last_attempt >= '$start_date'"),
-            'currently_blocked' => $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name} WHERE is_blocked = 1"),
-            'avg_attempts_per_ip' => $wpdb->get_var("SELECT AVG(attempts) FROM {$this->table_name} WHERE last_attempt >= '$start_date'")
-        );
-        
-        $cards = array(
-            array(
-                'title' => 'Wszystkie próby',
-                'value' => number_format($stats['total_attempts']),
-                'color' => '#0073aa'
-            ),
-            array(
-                'title' => 'Zablokowane próby',
-                'value' => number_format($stats['blocked_attempts']),
-                'color' => '#d63638'
-            ),
-            array(
-                'title' => 'Unikalne IP',
-                'value' => number_format($stats['unique_ips']),
-                'color' => '#00a32a'
-            ),
-            array(
-                'title' => 'Kraje',
-                'value' => number_format($stats['unique_countries']),
-                'color' => '#dba617'
-            ),
-            array(
-                'title' => 'Obecnie zablokowane',
-                'value' => number_format($stats['currently_blocked']),
-                'color' => '#ca4a1f'
-            ),
-            array(
-                'title' => 'Średnio prób na IP',
-                'value' => number_format($stats['avg_attempts_per_ip'], 1),
-                'color' => '#8e35c9'
-            )
-        );
-        
-        foreach ($cards as $card) {
-            echo '
-            <div class="stats-card">
-                <h4>' . $card['title'] . '</h4>
-                <div class="stats-number" style="color: ' . $card['color'] . '">' . $card['value'] . '</div>
-            </div>';
-        }
+    global $wpdb;
+    
+    $start_date = date('Y-m-d', strtotime("-$period days"));
+    
+    // ZABEZPIECZONE ZAPYTANIA Z PREPARE
+    $stats = array(
+        'total_attempts' => $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_name} WHERE last_attempt >= %s",
+            $start_date
+        )),
+        'blocked_attempts' => $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_name} WHERE is_blocked = 1 AND last_attempt >= %s",
+            $start_date
+        )),
+        'unique_ips' => $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT ip_address) FROM {$this->table_name} WHERE last_attempt >= %s",
+            $start_date
+        )),
+        'unique_countries' => $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT country_code) FROM {$this->table_name} WHERE country_code != '' AND last_attempt >= %s",
+            $start_date
+        )),
+        'currently_blocked' => $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name} WHERE is_blocked = 1"),
+        'avg_attempts_per_ip' => $wpdb->get_var($wpdb->prepare(
+            "SELECT AVG(attempts) FROM {$this->table_name} WHERE last_attempt >= %s",
+            $start_date
+        ))
+    );
+    
+    $cards = array(
+        array(
+            'title' => 'Wszystkie próby',
+            'value' => number_format($stats['total_attempts']),
+            'color' => '#0073aa'
+        ),
+        array(
+            'title' => 'Zablokowane próby',
+            'value' => number_format($stats['blocked_attempts']),
+            'color' => '#d63638'
+        ),
+        array(
+            'title' => 'Unikalne IP',
+            'value' => number_format($stats['unique_ips']),
+            'color' => '#00a32a'
+        ),
+        array(
+            'title' => 'Kraje',
+            'value' => number_format($stats['unique_countries']),
+            'color' => '#dba617'
+        ),
+        array(
+            'title' => 'Obecnie zablokowane',
+            'value' => number_format($stats['currently_blocked']),
+            'color' => '#ca4a1f'
+        ),
+        array(
+            'title' => 'Średnio prób na IP',
+            'value' => number_format($stats['avg_attempts_per_ip'], 1),
+            'color' => '#8e35c9'
+        )
+    );
+    
+    foreach ($cards as $card) {
+        echo '
+        <div class="stats-card">
+            <h4>' . $card['title'] . '</h4>
+            <div class="stats-number" style="color: ' . $card['color'] . '">' . $card['value'] . '</div>
+        </div>';
     }
+}
 
     // Wykres prób logowania w czasie
     private function display_attempts_chart($period) {
