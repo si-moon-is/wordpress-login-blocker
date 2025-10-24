@@ -64,9 +64,9 @@ class LoginBlocker_Ajax {
     
     global $wpdb;
     $stats = array(
-        'blocked' => intval($wpdb->get_var("SELECT COUNT(*) FROM {$this->main_class->table_name} WHERE is_blocked = 1")),
+        'blocked' => intval($wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}login_attempts WHERE is_blocked = 1")),
         'attempts' => intval($wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$this->main_class->table_name} WHERE last_attempt > %s",
+            "SELECT COUNT(*) FROM {$wpdb->prefix}login_attempts WHERE last_attempt > %s",
             date('Y-m-d H:i:s', time() - 3600)
         )))
     );
@@ -108,15 +108,15 @@ class LoginBlocker_Ajax {
         
         // Pobierz dane dzienne
         $daily_stats = $wpdb->get_results($wpdb->prepare("
-           SELECT DATE(last_attempt) as date, 
-           COUNT(*) as attempts,
-           COUNT(DISTINCT ip_address) as unique_ips,
-           SUM(is_blocked) as blocked
-       FROM {$this->main_class->table_name} 
-       WHERE last_attempt >= %s
-       GROUP BY DATE(last_attempt)
-       ORDER BY date ASC
-        ", $start_date));
+        SELECT DATE(last_attempt) as date, 
+            COUNT(*) as attempts,
+            COUNT(DISTINCT ip_address) as unique_ips,
+            SUM(is_blocked) as blocked
+        FROM {$wpdb->prefix}login_attempts 
+        WHERE last_attempt >= %s
+        GROUP BY DATE(last_attempt)
+        ORDER BY date ASC
+    ", $start_date));
         
         $dates = array();
         $attempts = array();
@@ -189,27 +189,33 @@ class LoginBlocker_Ajax {
      * NOWA METODA: Odblokowywanie IP (dla AJAX)
      */
     public function unblock_ip($ip) {
-        global $wpdb;
-        
-        $result = $wpdb->update(
-            $this->main_class->table_name,
-            array('is_blocked' => 0, 'attempts' => 0, 'block_until' => null),
-            array('ip_address' => $ip)
-        );
-        
-        if ($result !== false) {
-            // Logowanie akcji
-            if (method_exists($this->main_class, 'log_info')) {
-                $this->main_class->log_info("IP odblokowane przez AJAX", array(
-                    'ip' => $ip,
-                    'admin_user' => wp_get_current_user()->user_login
-                ));
-            }
-            return true;
-        }
-        
+    global $wpdb;
+
+    // DODAJ TYLKO TĘ LINIĘ - reszta pozostaje BEZ ZMIAN
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
         return false;
     }
+
+    // RESZTA FUNKCJI POZOSTAJE DOKŁADNIE TAKA SAMA
+    $result = $wpdb->update(
+        $this->main_class->table_name,
+        array('is_blocked' => 0, 'attempts' => 0, 'block_until' => null),
+        array('ip_address' => $ip)
+    );
+    
+    if ($result !== false) {
+        // Logowanie akcji
+        if (method_exists($this->main_class, 'log_info')) {
+            $this->main_class->log_info("IP odblokowane przez AJAX", array(
+                'ip' => $ip,
+                'admin_user' => wp_get_current_user()->user_login
+            ));
+        }
+        return true;
+    }
+    
+    return false;
+}
 
     /**
  * Rate limiting - opcjonalne ulepszenie
@@ -251,7 +257,7 @@ public function ajax_export_data() {
 
  function login_blocker_ajax_export() {
     // Sprawdź uprawnienia i nonce
-    if (!current_user_can('export') || !wp_verify_nonce($_POST['nonce'], 'login_blocker_export')) {
+    if (!current_user_can('manage_options') || !wp_verify_nonce($_POST['nonce'], 'login_blocker_export')) {
         wp_send_json_error('Brak uprawnień lub błąd bezpieczeństwa');
     }
     
