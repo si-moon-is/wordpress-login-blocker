@@ -36,7 +36,7 @@ define('LOGIN_BLOCKER_LOG_PATH', WP_CONTENT_DIR . '/logs/login-blocker/');
 // Klasa główna wtyczki
 class LoginBlocker {
     
-    protected $table_name;
+    private $table_name;
     private $max_attempts;
     private $block_duration;
     private $debug_mode;
@@ -90,6 +90,20 @@ class LoginBlocker {
         require_once plugin_dir_path(__FILE__) . 'includes/ajax-handlers.php';
 
         new LoginBlocker_Ajax($this);
+    }
+
+    /**
+     * Getter dla nazwy tabeli
+     */
+    public function get_table_name() {
+        return $this->table_name;
+    }
+    
+    /**
+     * Getter dla głównej klasy (dla ajax handlers)
+     */
+    public function get_main_class() {
+        return $this;
     }
 
     public function load_textdomain() {
