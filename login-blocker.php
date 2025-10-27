@@ -2844,7 +2844,7 @@ To jest automatyczna wiadomość testowa.
     }
 }
 
-add_action('init', 'login_blocker_handle_export_requests');
+add_action('admin_init', 'login_blocker_handle_export_requests');
 function login_blocker_handle_export_requests() {
     // Sprawdź czy to żądanie eksportu
     if (!isset($_GET['login_blocker_export']) || !isset($_GET['_wpnonce'])) {
