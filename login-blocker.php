@@ -2851,14 +2851,18 @@ To jest automatyczna wiadomość testowa.
 
 function login_blocker_handle_export_requests() {
     // Sprawdź czy to żądanie eksportu z formularza
-    if (!isset($_POST['export_nonce']) && !isset($_GET['export_nonce'])) {
+    //if (!isset($_POST['export_nonce']) && !isset($_GET['export_nonce'])) {
+    //   return;
+    //}
+
+	if (!isset($_POST['login_blocker_export']) && !isset($_GET['login_blocker_export'])) {
         return;
     }
     
     // Sprawdź nonce - obsłuż zarówno POST jak i GET
     $nonce = $_POST['export_nonce'] ?? ($_GET['export_nonce'] ?? '');
     if (!wp_verify_nonce($nonce, 'login_blocker_export')) {
-        wp_die('Błąd bezpieczeństwa');
+        wp_die('Błąd bezpieczeństwa: Nieprawidłowy nonce');
     }
     
     // Sprawdź uprawnienia
