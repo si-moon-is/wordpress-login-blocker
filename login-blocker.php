@@ -45,14 +45,18 @@ class LoginBlocker {
         global $wpdb;
         $this->table_name = $wpdb->prefix . 'login_blocker_attempts';
 
-        // UPDATE
+        // ładowanie class
         require_once plugin_dir_path(__FILE__) . 'includes/class-updater.php';
+        require_once plugin_dir_path(__FILE__) . 'includes/class-database.php';
         
         // Pobieranie ustawień
         $this->max_attempts = get_option('login_blocker_max_attempts', 5);
         $this->block_duration = get_option('login_blocker_block_duration', 3600);
         $this->debug_mode = LOGIN_BLOCKER_DEBUG;
         $this->init_updater();
+
+        // Inicjalizacja klas
+        $this->database = new LoginBlocker_Database();
 
         add_action('plugins_loaded', array($this, 'load_textdomain'));
         
@@ -76,7 +80,7 @@ class LoginBlocker {
     }
     
     public function init() {
-        $this->create_table();
+        $this->database->create_table();
         
         // Debug bazy danych przy pierwszym uruchomieniu
         if (get_option('login_blocker_first_run', true)) {
@@ -197,40 +201,7 @@ class LoginBlocker {
         ));
     }
     
-    // Tworzenie tabeli w bazie danych
-    private function create_table() {
-        global $wpdb;
         
-        $charset_collate = $wpdb->get_charset_collate();
-        
-        $sql = "CREATE TABLE {$this->table_name} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            ip_address varchar(45) NOT NULL,
-            username varchar(255) NULL,
-            attempts int NOT NULL DEFAULT 0,
-            last_attempt datetime NOT NULL,
-            is_blocked tinyint(1) DEFAULT 0,
-            block_until datetime NULL,
-            country_code varchar(2) NULL,
-            country_name varchar(100) NULL,
-            city varchar(100) NULL,
-            region varchar(100) NULL,
-            isp varchar(255) NULL,
-            latitude decimal(10,8) NULL,
-            longitude decimal(11,8) NULL,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            INDEX ip_index (ip_address),
-            INDEX blocked_index (is_blocked),
-            INDEX username_index (username),
-            INDEX country_index (country_code),
-            INDEX date_index (last_attempt)
-        ) $charset_collate;";
-        
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
-    }
-    
     // Pobieranie adresu IP klienta
     private function get_client_ip() {
         $ip_keys = array('HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'HTTP_CLIENT_IP', 'REMOTE_ADDR');
@@ -252,18 +223,7 @@ class LoginBlocker {
         return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
 
-    private function is_ip_blocked($ip) {
-        global $wpdb;
-        
-        $blocked = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$this->table_name} WHERE ip_address = %s AND is_blocked = 1 AND block_until > %s",
-            $ip,
-            current_time('mysql')
-        ));
-        
-        return !empty($blocked);
-    }
-    
+       
     // Geolokalizacja IP
     private function get_ip_geolocation($ip) {
         try {
