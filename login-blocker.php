@@ -822,16 +822,6 @@ class LoginBlocker {
             'meta'   => array()
         ));
         
-        $admin_bar->add_menu(array(
-            'id'     => 'login-blocker-analytics',
-            'parent' => 'login-blocker',
-            'title'  => 'Statystyki',
-            'href'   => admin_url('admin.php?page=login-blocker-analytics'),
-            'meta'   => array(
-                'title' => 'Zaawansowane statystyki i raporty'
-            )
-        ));
-        
         // Odblokuj wszystkie (jeśli są zablokowane)
         if ($blocked_count > 0) {
             $admin_bar->add_menu(array(
@@ -864,13 +854,14 @@ class LoginBlocker {
             'meta'   => array()
         ));
         
-        // Linki
         $admin_bar->add_menu(array(
-            'id'     => 'login-blocker-manage',
+            'id'     => 'login-blocker-analytics',
             'parent' => 'login-blocker',
-            'title'  => 'Zarządzaj blokadami',
-            'href'   => admin_url('admin.php?page=login-blocker'),
-            'meta'   => array()
+            'title'  => 'Statystyki',
+            'href'   => admin_url('admin.php?page=login-blocker-analytics'),
+            'meta'   => array(
+                'title' => 'Zaawansowane statystyki i raporty'
+            )
         ));
         
         $admin_bar->add_menu(array(
