@@ -92,20 +92,6 @@ class LoginBlocker {
         new LoginBlocker_Ajax($this);
     }
 
-    /**
-     * Getter dla nazwy tabeli
-     */
-    public function get_table_name() {
-        return $this->table_name;
-    }
-    
-    /**
-     * Getter dla głównej klasy (dla ajax handlers)
-     */
-    public function get_main_class() {
-        return $this;
-    }
-
     public function load_textdomain() {
         load_plugin_textdomain('login-blocker', false, dirname(plugin_basename(__FILE__)) . '/languages/');
     }
