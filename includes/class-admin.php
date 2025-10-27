@@ -14,8 +14,9 @@ class LoginBlocker_Admin {
     private $table_name;
     
     public function __construct($main_class) {
+        global $wpdb;
         $this->main_class = $main_class;
-        $this->table_name = $main_class->table_name;
+        $this->table_name = $wpdb->prefix . 'login_blocker_attempts'; 
         
         // Rejestracja hooków admina
         add_action('admin_menu', array($this, 'add_admin_menu'));
