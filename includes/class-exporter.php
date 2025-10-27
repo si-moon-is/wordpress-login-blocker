@@ -206,20 +206,30 @@ class LoginBlocker_Exporter {
      */
     public function export_stats($period) {
         try {
+            
+            error_log('Login Blocker: Starting stats export for period: ' . $period);
+            
             if (!$this->check_capabilities()) {
                 throw new Exception('Insufficient permissions for stats export');
             }
             
-            if (headers_sent()) {
-                throw new Exception('Headers already sent');
-            }
+            if (headers_sent($filename, $linenum)) {
+            throw new Exception("Headers already sent in {$filename} on line {$linenum}");
+           }
             
             $period = intval($period);
+            
             if ($period < 1 || $period > $this->max_period) {
-                throw new Exception('Invalid period specified');
+                throw new Exception('Invalid period specified: ' . $period);
             }
             
             $stats = $this->get_stats_data($period);
+
+            error_log('Login Blocker: Stats data retrieved: ' . json_encode($stats));
+
+            if (empty($stats)) {
+            throw new Exception('No stats data available');
+            }
             
             $filename = $this->generate_filename('stats', 'json');
             
@@ -232,6 +242,7 @@ class LoginBlocker_Exporter {
             exit;
             
         } catch (Exception $e) {
+            error_log('Login Blocker Stats Export Error: ' . $e->getMessage());
             $this->log_error('Stats export failed: ' . $e->getMessage());
             return false;
         }
