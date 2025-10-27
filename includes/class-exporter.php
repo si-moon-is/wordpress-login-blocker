@@ -255,6 +255,15 @@ class LoginBlocker_Exporter {
         global $wpdb;
         
         $start_date = date('Y-m-d H:i:s', strtotime("-$period days"));
+
+        error_log('Login Blocker: Getting stats for period from: ' . $start_date);
+    
+        $total_attempts = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->table_name} WHERE last_attempt >= %s",
+            $start_date
+        ));
+    
+        error_log('Login Blocker: Total attempts: ' . $total_attempts);
         
         return [
             'export_info' => [
