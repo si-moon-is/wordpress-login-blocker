@@ -36,7 +36,7 @@ define('LOGIN_BLOCKER_LOG_PATH', WP_CONTENT_DIR . '/logs/login-blocker/');
 // Klasa główna wtyczki
 class LoginBlocker {
     
-    private $table_name;
+    protected $table_name;
     private $max_attempts;
     private $block_duration;
     private $debug_mode;
