@@ -87,7 +87,9 @@ class LoginBlocker {
         // Ajax dla testowania email
         add_action('wp_ajax_test_email_config', array($this, 'test_email_config'));
 
-    add_action('plugins_loaded', array($this, 'load_textdomain'));
+    	add_action('plugins_loaded', array($this, 'load_textdomain'));
+		
+		add_action('admin_init', 'login_blocker_handle_export_requests');
     }
     
     public function init() {
@@ -1249,7 +1251,8 @@ class LoginBlocker {
         
         <div class="card">
             <h2><?php echo esc_html__('Eksport Prób Logowania', 'login-blocker'); ?></h2>
-            <form id="export-form">
+            <form method="post" action="<?php echo admin_url('admin.php'); ?>">
+                <input type="hidden" name="login_blocker_export" value="1">
                 <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
                 <table class="form-table">
                     <tr>
@@ -1284,8 +1287,10 @@ class LoginBlocker {
 
         <div class="card">
             <h2><?php echo esc_html__('Eksport Statystyk', 'login-blocker'); ?></h2>
-            <form id="export-stats-form">
-                <?php wp_nonce_field('login_blocker_export_stats', 'stats_nonce'); ?>
+            <form method="post" action="<?php echo admin_url('admin.php'); ?>">
+                <input type="hidden" name="login_blocker_export" value="1">
+                <input type="hidden" name="type" value="stats">
+                <?php wp_nonce_field('login_blocker_export', 'stats_nonce'); ?>
                 <table class="form-table">
                     <tr>
                         <th scope="row">
@@ -2844,11 +2849,16 @@ To jest automatyczna wiadomość testowa.
     }
 }
 
-add_action('admin_init', 'login_blocker_handle_export_requests');
 function login_blocker_handle_export_requests() {
-    // Sprawdź czy to żądanie eksportu
-    if (!isset($_GET['login_blocker_export']) || !isset($_GET['_wpnonce'])) {
+    // Sprawdź czy to żądanie eksportu z formularza
+    if (!isset($_POST['export_nonce']) && !isset($_GET['export_nonce'])) {
         return;
+    }
+    
+    // Sprawdź nonce - obsłuż zarówno POST jak i GET
+    $nonce = $_POST['export_nonce'] ?? ($_GET['export_nonce'] ?? '');
+    if (!wp_verify_nonce($nonce, 'login_blocker_export')) {
+        wp_die('Błąd bezpieczeństwa');
     }
     
     // Sprawdź uprawnienia
@@ -2856,15 +2866,10 @@ function login_blocker_handle_export_requests() {
         wp_die('Brak uprawnień do eksportu');
     }
     
-    // Sprawdź nonce
-    if (!wp_verify_nonce($_GET['_wpnonce'], 'login_blocker_export')) {
-        wp_die('Błąd bezpieczeństwa');
-    }
-    
     // Pobierz parametry
-    $format = sanitize_text_field($_GET['format'] ?? 'csv');
-    $period = intval($_GET['period'] ?? 30);
-    $type = sanitize_text_field($_GET['type'] ?? 'data'); // data lub stats
+    $format = sanitize_text_field($_POST['format'] ?? ($_GET['format'] ?? 'csv'));
+    $period = intval($_POST['period'] ?? ($_GET['period'] ?? 30));
+    $type = sanitize_text_field($_POST['type'] ?? ($_GET['type'] ?? 'data'));
     
     // Załaduj klasę eksportera
     require_once plugin_dir_path(__FILE__) . 'includes/class-exporter.php';
@@ -2877,7 +2882,6 @@ function login_blocker_handle_export_requests() {
         $result = $exporter->export($format, $period);
     }
     
-    // Jeśli eksport się nie udał
     if (!$result) {
         wp_die('Eksport nie powiódł się. Sprawdź logi błędów.');
     }
