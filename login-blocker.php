@@ -1290,7 +1290,7 @@ class LoginBlocker {
             <form method="post" action="<?php echo admin_url('admin.php'); ?>">
                 <input type="hidden" name="login_blocker_export" value="1">
                 <input type="hidden" name="type" value="stats">
-                <?php wp_nonce_field('login_blocker_export', 'stats_nonce'); ?>
+                <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
                 <table class="form-table">
                     <tr>
                         <th scope="row">
