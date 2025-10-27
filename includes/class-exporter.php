@@ -71,11 +71,16 @@ class LoginBlocker_Exporter {
      * Eksport danych do CSV
      */
     private function export_csv($period) {
+        error_log('Login Blocker: Starting CSV export for period: ' . $period);
+
         $data = $this->get_export_data($period);
         
         if (empty($data)) {
+            error_log('Login Blocker: No data found for export');
             throw new Exception('No data available for export');
         }
+        
+        error_log('Login Blocker: Found ' . count($data) . ' records for export');
         
         $filename = $this->generate_filename('csv');
         
