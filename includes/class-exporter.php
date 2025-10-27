@@ -16,7 +16,7 @@ class LoginBlocker_Exporter {
     
     public function __construct() {
         global $wpdb;
-        $this->table_name = $wpdb->prefix . 'login_attempts';
+        $this->table_name = $wpdb->prefix . 'login_blocker_attempts';
         
         // Wyłącz buffering i kompresję dla czystego output
         $this->clean_output_buffers();
