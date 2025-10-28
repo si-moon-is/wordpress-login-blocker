@@ -12,10 +12,14 @@ class LoginBlocker_Admin {
     
     private $main_class;
     private $table_name;
+    private $database;
     
     public function __construct($main_class) {
         global $wpdb;
         $this->main_class = $main_class;
+        //$this->main_class = $main_class;
+        //$this->table_name = $main_class->get_table_name();
+        $this->database = $main_class->get_database();
         $this->table_name = $wpdb->prefix . 'login_blocker_attempts'; 
         
         // Rejestracja hooków admina
