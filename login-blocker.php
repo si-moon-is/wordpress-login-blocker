@@ -96,6 +96,13 @@ class LoginBlocker {
         new LoginBlocker_Ajax($this);
     }
 
+    /**
+     * Getter dla klasy database
+     */
+    public function get_database() {
+        return $this->database;
+    }
+
     public function load_textdomain() {
         load_plugin_textdomain('login-blocker', false, dirname(plugin_basename(__FILE__)) . '/languages/');
     }
