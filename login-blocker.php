@@ -102,6 +102,10 @@ class LoginBlocker {
     public function get_database() {
         return $this->database;
     }
+    public function get_table_name() {
+        global $wpdb;
+        return $wpdb->prefix . 'login_blocker_attempts';
+    }
 
     public function load_textdomain() {
         load_plugin_textdomain('login-blocker', false, dirname(plugin_basename(__FILE__)) . '/languages/');
