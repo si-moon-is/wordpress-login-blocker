@@ -226,4 +226,48 @@ class LoginBlocker_Geolocation {
             'longitude' => null
         );
     }
+
+    // Dodaj tę funkcję do klasy LoginBlocker_Admin_Debug
+public function ajax_test_geolocation() {
+    if (!current_user_can('manage_options')) {
+        wp_die('Brak uprawnień');
+    }
+    
+    if (!wp_verify_nonce($_POST['nonce'], 'login_blocker_debug')) {
+        wp_die('Błąd bezpieczeństwa');
+    }
+    
+    $test_ip = sanitize_text_field($_POST['test_ip']);
+    
+    if (empty($test_ip)) {
+        wp_send_json_error('Brak adresu IP do testu');
+        return;
+    }
+    
+    // Użyj funkcji geolokalizacji z głównej klasy
+    $geolocation_data = $this->admin->get_main_class()->get_ip_geolocation($test_ip);
+    
+    if ($geolocation_data) {
+        $result = array(
+            'ip' => $test_ip,
+            'country_name' => $geolocation_data['country_name'] ?? null,
+            'country_code' => $geolocation_data['country_code'] ?? null,
+            'city' => $geolocation_data['city'] ?? null,
+            'region_name' => $geolocation_data['region_name'] ?? null,
+            'isp' => $geolocation_data['isp'] ?? null,
+            'latitude' => $geolocation_data['latitude'] ?? null,
+            'longitude' => $geolocation_data['longitude'] ?? null
+        );
+        
+        // Log testu
+        $this->admin->get_main_class()->log_info("Test geolokalizacji wykonany", array(
+            'test_ip' => $test_ip,
+            'geolocation_data' => $result
+        ));
+        
+        wp_send_json_success($result);
+    } else {
+        wp_send_json_error('Nie udało się pobrać danych geolokalizacji dla IP: ' . $test_ip);
+    }
+}
 }
