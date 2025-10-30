@@ -384,7 +384,9 @@ class LoginBlocker_Admin_Debug {
                         <button type="button" id="show-system-info" class="button button-secondary">
                             Pokaż Informacje Systemowe
                         </button>
-                        <div id="system-info" style="margin-top: 10px; display: none;"></div>
+                        <div id="system-info" style="margin-top: 10px; display: none;">
+                        <pre style="background: #f6f7f7; padding: 15px; border-radius: 4px; overflow: auto; max-height: 400px;"><?php echo esc_html($this->get_system_info()); ?></pre>
+                    </div>
                     </div>
                 </div>
             </div>
