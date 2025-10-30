@@ -73,6 +73,30 @@ class LoginBlocker_Ajax {
     
     wp_send_json_success($stats);
 }
+
+    public function unblock_ip($ip) {
+    global $wpdb;
+    
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        return false;
+    }
+
+    $result = $wpdb->update(
+        $this->table_name,
+        array('is_blocked' => 0, 'attempts' => 0, 'block_until' => null),
+        array('ip_address' => $ip)
+    );
+    
+    if ($result !== false) {
+        $this->log_info("IP odblokowane przez AJAX", array(
+            'ip' => $ip,
+            'admin_user' => wp_get_current_user()->user_login
+        ));
+        return true;
+    }
+    
+    return false;
+}
     
     /**
      * NOWA METODA: Pobieranie danych dla wykresów
