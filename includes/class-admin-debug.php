@@ -350,4 +350,354 @@ class LoginBlocker_Admin_Debug {
                             Test Zapisu do Bazy
                         </button>
                         <div id="db-test-result" style="margin-top: 10px;"></div>
-                        <p class="description">Testuje zapis rekordu do tabeli login_blocker_attempts</p
+                        <p class="description">Testuje zapis rekordu do tabeli login_blocker_attempts</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Zaawansowane Akcje</h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div>
+                        <h4>Czyszczenie</h4>
+                        <form method="post">
+                            <?php wp_nonce_field('login_blocker_debug'); ?>
+                            <input type="hidden" name="action" value="clear_logs">
+                            <button type="submit" class="button button-danger" onclick="return confirm('Czy na pewno chcesz USUNĄĆ WSZYSTKIE pliki logów? Tej operacji nie można cofnąć!')">
+                                Wyczyść Wszystkie Logi
+                            </button>
+                            <p class="description">Usuwa wszystkie pliki z katalogu logów</p>
+                        </form>
+                    </div>
+                    
+                    <div>
+                        <h4>Debug Geolokalizacji</h4>
+                        <button type="button" id="test-geolocation" class="button button-secondary">
+                            Test Geolokalizacji
+                        </button>
+                        <div id="geo-test-result" style="margin-top: 10px;"></div>
+                        <p class="description">Testuje pobieranie geolokalizacji dla przykładowego IP</p>
+                    </div>
+                    
+                    <div>
+                        <h4>Informacje o Systemie</h4>
+                        <button type="button" id="show-system-info" class="button button-secondary">
+                            Pokaż Informacje Systemowe
+                        </button>
+                        <div id="system-info" style="margin-top: 10px; display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            $('#test-database').on('click', function() {
+                var $button = $(this);
+                var $result = $('#db-test-result');
+                
+                $button.prop('disabled', true).text('Testowanie...');
+                $result.html('<p><span class="spinner is-active"></span> Testowanie zapisu do bazy...</p>');
+                
+                $.post(ajaxurl, {
+                    action: 'login_blocker_test_db',
+                    nonce: '<?php echo wp_create_nonce('login_blocker_debug'); ?>'
+                }, function(response) {
+                    $button.prop('disabled', false).text('Test Zapisu do Bazy');
+                    
+                    if (response.success) {
+                        $result.html('<div class="notice notice-success"><p>' + response.data + '</p></div>');
+                    } else {
+                        $result.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
+                    }
+                });
+            });
+            
+            $('#show-system-info').on('click', function() {
+                $('#system-info').toggle();
+                if ($('#system-info').is(':visible')) {
+                    $('#system-info').html('<p><span class="spinner is-active"></span> Ładowanie informacji systemowych...</p>');
+                    
+                    // Tutaj możesz dodać AJAX do pobrania szczegółowych informacji
+                    setTimeout(function() {
+                        $('#system-info').html('<pre><?php echo esc_html($this->get_system_info()); ?></pre>');
+                    }, 500);
+                }
+            });
+        });
+        </script>
+        <?php
+    }
+
+    public function display_email_test_tab() {
+        ?>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="card">
+                <h3>Test Powiadomień Email</h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4>Konfiguracja Email</h4>
+                    <?php
+                    $smtp_enabled = get_option('login_blocker_smtp_enabled', false);
+                    $notification_email = get_option('login_blocker_notification_email', get_option('admin_email'));
+                    ?>
+                    <table class="widefat" style="width: 100%;">
+                        <tr>
+                            <td><strong>Adres powiadomień:</strong></td>
+                            <td><?php echo esc_html($notification_email); ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>SMTP:</strong></td>
+                            <td><?php echo $smtp_enabled ? 'WŁĄCZONY' : 'WYŁĄCZONY (używany system WordPress)'; ?></td>
+                        </tr>
+                        <?php if ($smtp_enabled): ?>
+                        <tr>
+                            <td><strong>Serwer SMTP:</strong></td>
+                            <td><?php echo esc_html(get_option('login_blocker_smtp_host', '')); ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Port:</strong></td>
+                            <td><?php echo esc_html(get_option('login_blocker_smtp_port', '587')); ?></td>
+                        </tr>
+                        <?php endif; ?>
+                    </table>
+                </div>
+                
+                <div>
+                    <h4>Wyślij Testowego Emaila</h4>
+                    <button type="button" id="test-email-send" class="button button-primary">
+                        Wyślij Testowego Emaila
+                    </button>
+                    <div id="email-test-result" style="margin-top: 10px;"></div>
+                    <p class="description">Wyśle testową wiadomość na skonfigurowany adres email</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Historia Powiadomień</h3>
+                <div id="email-history">
+                    <p>Funkcja historii powiadomień będzie dostępna w przyszłych wersjach.</p>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4>Ustawienia Powiadomień</h4>
+                    <p>
+                        <strong>Powiadomienia o błędach:</strong> 
+                        <?php echo get_option('login_blocker_error_notifications', true) ? 'WŁĄCZONE' : 'WYŁĄCZONE'; ?>
+                    </p>
+                    <p>
+                        <a href="<?php echo admin_url('admin.php?page=login-blocker-settings'); ?>" class="button button-secondary">
+                            Przejdź do Ustawień Email
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            $('#test-email-send').on('click', function() {
+                var $button = $(this);
+                var $result = $('#email-test-result');
+                
+                $button.prop('disabled', true).text('Wysyłanie...');
+                $result.html('<p><span class="spinner is-active"></span> Wysyłanie testowego emaila...</p>');
+                
+                $.post(ajaxurl, {
+                    action: 'test_email_config',
+                    nonce: '<?php echo wp_create_nonce('login_blocker_test_email'); ?>'
+                }, function(response) {
+                    $button.prop('disabled', false).text('Wyślij Testowego Emaila');
+                    
+                    if (response.success) {
+                        $result.html('<div class="notice notice-success"><p>' + response.data + '</p></div>');
+                    } else {
+                        $result.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
+                    }
+                }).fail(function() {
+                    $button.prop('disabled', false).text('Wyślij Testowego Emaila');
+                    $result.html('<div class="notice notice-error"><p>Błąd połączenia z serwerem.</p></div>');
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+
+    // Pomocnicze metody:
+    private function display_plugin_info() {
+        $plugin_data = get_plugin_data(LOGIN_BLOCKER_PLUGIN_PATH . 'login-blocker.php');
+        ?>
+        <table class="widefat" style="width: 100%;">
+            <tr>
+                <td><strong>Wersja:</strong></td>
+                <td><?php echo esc_html($plugin_data['Version']); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Autor:</strong></td>
+                <td><?php echo esc_html($plugin_data['Author']); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Opis:</strong></td>
+                <td><?php echo esc_html($plugin_data['Description']); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Ścieżka:</strong></td>
+                <td><code><?php echo esc_html(LOGIN_BLOCKER_PLUGIN_PATH); ?></code></td>
+            </tr>
+            <tr>
+                <td><strong>URL:</strong></td>
+                <td><code><?php echo esc_html(LOGIN_BLOCKER_PLUGIN_URL); ?></code></td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    private function display_log_stats() {
+        $log_files = $this->admin->get_main_class()->get_log_files();
+        $total_size = 0;
+        $total_files = count($log_files);
+        
+        foreach ($log_files as $log_file) {
+            $file_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
+            if (file_exists($file_path)) {
+                $total_size += filesize($file_path);
+            }
+        }
+        ?>
+        <table class="widefat" style="width: 100%;">
+            <tr>
+                <td><strong>Liczba plików:</strong></td>
+                <td><?php echo number_format($total_files); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Łączny rozmiar:</strong></td>
+                <td><?php echo $this->format_bytes($total_size); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Katalog logów:</strong></td>
+                <td><code><?php echo esc_html(LOGIN_BLOCKER_LOG_PATH); ?></code></td>
+            </tr>
+            <tr>
+                <td><strong>Dostęp do zapisu:</strong></td>
+                <td>
+                    <?php 
+                    if (is_writable(LOGIN_BLOCKER_LOG_PATH)) {
+                        echo '<span style="color: green;">✓ Dostępny</span>';
+                    } else {
+                        echo '<span style="color: red;">✗ Brak dostępu</span>';
+                    }
+                    ?>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    private function display_log_files_stats($log_files) {
+        $total_size = 0;
+        $newest_file = '';
+        $newest_time = 0;
+        
+        foreach ($log_files as $log_file) {
+            $file_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
+            if (file_exists($file_path)) {
+                $size = filesize($file_path);
+                $total_size += $size;
+                $mtime = filemtime($file_path);
+                
+                if ($mtime > $newest_time) {
+                    $newest_time = $mtime;
+                    $newest_file = $log_file;
+                }
+            }
+        }
+        ?>
+        <table class="widefat" style="width: 100%;">
+            <tr>
+                <td><strong>Łączna liczba plików:</strong></td>
+                <td><?php echo number_format(count($log_files)); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Łączny rozmiar:</strong></td>
+                <td><?php echo $this->format_bytes($total_size); ?></td>
+            </tr>
+            <tr>
+                <td><strong>Najnowszy plik:</strong></td>
+                <td><?php echo $newest_file ? esc_html($newest_file) : 'Brak'; ?></td>
+            </tr>
+            <tr>
+                <td><strong>Ostatnia modyfikacja:</strong></td>
+                <td><?php echo $newest_time ? date('Y-m-d H:i:s', $newest_time) : '—'; ?></td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    private function get_log_file_info($log_file) {
+        $file_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
+        if (!file_exists($file_path)) {
+            return 'Plik nie istnieje';
+        }
+        
+        $size = filesize($file_path);
+        $mtime = filemtime($file_path);
+        
+        return $this->format_bytes($size) . ' • ' . date('Y-m-d H:i:s', $mtime);
+    }
+
+    private function get_log_file_size($log_file) {
+        $file_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
+        return file_exists($file_path) ? $this->format_bytes(filesize($file_path)) : '0 B';
+    }
+
+    private function get_log_file_mtime($log_file) {
+        $file_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
+        return file_exists($file_path) ? date('Y-m-d H:i:s', filemtime($file_path)) : '—';
+    }
+
+    private function estimate_log_lines($log_file) {
+        $file_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
+        if (!file_exists($file_path)) {
+            return '0';
+        }
+        
+        $content = file_get_contents($file_path);
+        $lines = substr_count($content, "\n");
+        return number_format($lines);
+    }
+
+    private function get_log_download_url($log_file) {
+        return wp_nonce_url(
+            admin_url('admin.php?page=login-blocker-debug&download_log=' . urlencode($log_file)),
+            'download_log_' . $log_file
+        );
+    }
+
+    private function format_bytes($bytes) {
+        if ($bytes === 0) return '0 B';
+        
+        $units = array('B', 'KB', 'MB', 'GB');
+        $base = 1024;
+        $class = min((int)log($bytes, $base), count($units) - 1);
+        
+        return sprintf('%s %s', number_format($bytes / pow($base, $class), 2), $units[$class]);
+    }
+
+    private function get_system_info() {
+        global $wpdb;
+        
+        $info = "=== SYSTEM INFORMATION ===\n";
+        $info .= "WordPress Version: " . get_bloginfo('version') . "\n";
+        $info .= "PHP Version: " . phpversion() . "\n";
+        $info .= "MySQL Version: " . $wpdb->db_version() . "\n";
+        $info .= "WP_DEBUG: " . (defined('WP_DEBUG') && WP_DEBUG ? 'YES' : 'NO') . "\n";
+        $info .= "WP_DEBUG_LOG: " . (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG ? 'YES' : 'NO') . "\n";
+        $info .= "Memory Limit: " . WP_MEMORY_LIMIT . "\n";
+        $info .= "Login Blocker Version: " . LOGIN_BLOCKER_VERSION . "\n";
+        $info .= "Table Exists: " . ($wpdb->get_var("SHOW TABLES LIKE '{$this->admin->get_table_name()}'") ? 'YES' : 'NO') . "\n";
+        
+        return $info;
+    }
+}
