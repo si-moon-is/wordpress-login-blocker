@@ -99,7 +99,6 @@ class LoginBlocker_Admin_Debug {
         <?php
     }
 
-    // Nowe metody dla zakładek debug:
     public function display_debug_status_tab() {
         ?>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
@@ -525,7 +524,6 @@ class LoginBlocker_Admin_Debug {
         <?php
     }
 
-    // Pomocnicze metody:
     private function display_plugin_info() {
         $plugin_data = get_plugin_data(LOGIN_BLOCKER_PLUGIN_PATH . 'login-blocker.php');
         ?>
