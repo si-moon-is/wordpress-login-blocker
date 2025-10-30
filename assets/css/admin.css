@@ -448,3 +448,83 @@
 .stats-success {
     color: #00a32a;
 }
+
+/* Style dla zakładek debug */
+.login-blocker-debug-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.login-blocker-system-info pre {
+    background: #f6f7f7;
+    padding: 15px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Przyciski z ikonami */
+.button .dashicons {
+    margin-right: 4px;
+}
+
+/* Log viewer */
+#log-content {
+    line-height: 1.4;
+    font-size: 12px;
+}
+
+#log-content .log-error {
+    color: #ff6b6b;
+}
+
+#log-content .log-warning {
+    color: #ffd93d;
+}
+
+#log-content .log-info {
+    color: #6bcf7f;
+}
+
+#log-content .log-debug {
+    color: #4dc3ff;
+}
+
+/* Responsywność zakładek debug */
+@media screen and (max-width: 782px) {
+    .login-blocker-debug-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .login-blocker-tab-content .card {
+        margin-bottom: 15px;
+    }
+}
+
+/* Kopiowanie logów */
+#copy-log.copied {
+    background: #00a32a;
+    border-color: #00a32a;
+}
+
+/* Test results */
+.debug-test-result {
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.debug-test-success {
+    background: #d1e7dd;
+    border: 1px solid #badbcc;
+    color: #0f5132;
+}
+
+.debug-test-error {
+    background: #f8d7da;
+    border: 1px solid #f1aeb5;
+    color: #721c24;
+}
