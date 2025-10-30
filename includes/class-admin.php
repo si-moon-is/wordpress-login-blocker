@@ -26,11 +26,11 @@ class LoginBlocker_Admin {
         $this->table_name = $wpdb->prefix . 'login_blocker_attempts'; 
         
         // Inicjalizacja podklas
-        require_once LOGIN_BLOCKER_PLUGIN_PATH . './class-admin-analytics.php';
-        require_once LOGIN_BLOCKER_PLUGIN_PATH . './class-admin-debug.php';
-        require_once LOGIN_BLOCKER_PLUGIN_PATH . './class-admin-settings.php';
-        require_once LOGIN_BLOCKER_PLUGIN_PATH . './class-admin-export.php';
-        require_once LOGIN_BLOCKER_PLUGIN_PATH . './class-admin-blocked.php';
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'includes/class-admin-analytics.php';
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'includes/class-admin-debug.php';
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'includes/class-admin-settings.php';
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'includes/class-admin-export.php';
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'includes/class-admin-blocked.php';
         
         $this->analytics = new LoginBlocker_Admin_Analytics($this);
         $this->debug = new LoginBlocker_Admin_Debug($this);
