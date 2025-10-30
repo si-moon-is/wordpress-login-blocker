@@ -91,4 +91,110 @@ class LoginBlocker_Admin_Blocked {
                 <form method="get" action="<?php echo admin_url('admin.php'); ?>">
                     <input type="hidden" name="page" value="login-blocker-blocked">
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="text" name="s" value="<?php echo esc_attr($search); ?>" placeholder="
+                        <input type="text" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Wyszukaj adres IP..." style="width: 300px;">
+                        <button type="submit" class="button button-primary">Szukaj</button>
+                        <?php if (!empty($search)): ?>
+                            <a href="<?php echo admin_url('admin.php?page=login-blocker-blocked'); ?>" class="button">Wyczyść</a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Statystyki -->
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>Statystyki</h3>
+                <p>Znaleziono: <strong><?php echo $total_blocked; ?></strong> zablokowanych adresów IP</p>
+                <?php if (!empty($search)): ?>
+                    <p>Wyniki wyszukiwania dla: <code><?php echo esc_html($search); ?></code></p>
+                <?php endif; ?>
+            </div>
+            
+            <!-- Akcje masowe -->
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>Akcje</h3>
+                <div style="display: flex; gap: 10px;">
+                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock_all'), 'login_blocker_action'); ?>" 
+                       class="button" 
+                       onclick="return confirm('Czy na pewno chcesz odblokować WSZYSTKIE adresy IP?')">
+                       Odblokuj wszystkie
+                    </a>
+                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete_all_blocked'), 'login_blocker_action'); ?>" 
+                       class="button button-danger" 
+                       onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE zablokowane rekordy?')">
+                       Usuń wszystkie zablokowane
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Tabela zablokowanych IP -->
+            <div class="card">
+                <h2>Obecnie zablokowane adresy IP</h2>
+                <?php if ($blocked_ips): ?>
+                    <div style="overflow-x: auto; width: 100%;">
+                        <table class="wp-list-table widefat fixed striped" style="width: 100%; min-width: 1000px;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">Adres IP</th>
+                                    <th style="width: 20%;">Użytkownik</th>
+                                    <th style="width: 10%;">Próby</th>
+                                    <th style="width: 15%;">Ostatnia próba</th>
+                                    <th style="width: 15%;">Zablokowany do</th>
+                                    <th style="width: 10%;">Kraj</th>
+                                    <th style="width: 15%;">Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($blocked_ips as $ip): ?>
+                                    <tr>
+                                        <td><?php echo esc_html($ip->ip_address); ?></td>
+                                        <td><?php echo esc_html($ip->username); ?></td>
+                                        <td><?php echo esc_html($ip->attempts); ?></td>
+                                        <td><?php echo esc_html($ip->last_attempt); ?></td>
+                                        <td><?php echo esc_html($ip->block_until); ?></td>
+                                        <td>
+                                            <?php if (!empty($ip->country_code) && $ip->country_code !== 'LOCAL'): ?>
+                                                <?php 
+                                                    $country_code_lower = strtolower($ip->country_code);
+                                                    $flag_url = "https://flagcdn.com/24x18/{$country_code_lower}.png";
+                                                ?>
+                                                <img src="<?php echo esc_url($flag_url); ?>" alt="<?php echo esc_attr($ip->country_code); ?>" title="<?php echo esc_attr($ip->country_name); ?>" style="width: 24px; height: 18px;">
+                                            <?php else: ?>
+                                                <span style="color: #999;">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Paginacja -->
+                    <?php if ($total_pages > 1): ?>
+                        <div class="tablenav">
+                            <div class="tablenav-pages">
+                                <?php
+                                echo paginate_links(array(
+                                    'base' => add_query_arg('paged', '%#%'),
+                                    'format' => '',
+                                    'prev_text' => '&laquo;',
+                                    'next_text' => '&raquo;',
+                                    'total' => $total_pages,
+                                    'current' => $current_page
+                                ));
+                                ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    
+                <?php else: ?>
+                    <p><?php echo empty($search) ? 'Brak zablokowanych adresów IP.' : 'Brak wyników wyszukiwania.'; ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php
+    }
+}
