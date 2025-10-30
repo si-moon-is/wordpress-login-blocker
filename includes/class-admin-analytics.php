@@ -104,7 +104,6 @@ class LoginBlocker_Admin_Analytics {
         <?php
     }
 
-    // Nowe metody dla każdej zakładki:
     public function display_overview_tab($period) {
         ?>
         <div class="login-blocker-stats-grid" style="margin-bottom: 20px;">
