@@ -497,6 +497,26 @@ class LoginBlocker {
     
     return !empty($blocked);
 }
+    public function unblock_ip($ip) {
+    global $wpdb;
+    
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        return false;
+    }
+
+    $result = $wpdb->update(
+        $this->table_name,
+        array('is_blocked' => 0, 'attempts' => 0, 'block_until' => null),
+        array('ip_address' => $ip)
+    );
+    
+    if ($result !== false) {
+        $this->log_info("IP odblokowane", array('ip' => $ip));
+        return true;
+    }
+    
+    return false;
+}
 
     public function test_database_write() {
         global $wpdb;
