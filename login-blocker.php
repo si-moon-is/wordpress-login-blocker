@@ -486,6 +486,18 @@ class LoginBlocker {
         }
     }
 
+    private function is_ip_blocked($ip) {
+    global $wpdb;
+    
+    $blocked = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM {$this->table_name} WHERE ip_address = %s AND is_blocked = 1 AND block_until > %s",
+        $ip,
+        current_time('mysql')
+    ));
+    
+    return !empty($blocked);
+}
+
     public function test_database_write() {
         global $wpdb;
         
