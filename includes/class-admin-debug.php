@@ -384,9 +384,7 @@ class LoginBlocker_Admin_Debug {
                         <button type="button" id="show-system-info" class="button button-secondary">
                             Pokaż Informacje Systemowe
                         </button>
-                        <div id="system-info" style="margin-top: 10px; display: none;">
-                        <pre style="background: #f6f7f7; padding: 15px; border-radius: 4px; overflow: auto; max-height: 400px;"><?php echo esc_html($this->get_system_info()); ?></pre>
-                    </div>
+                        <div id="system-info" style="margin-top: 10px; display: none;"></div>
                     </div>
                 </div>
             </div>
@@ -416,21 +414,45 @@ class LoginBlocker_Admin_Debug {
             });
             
             $('#show-system-info').on('click', function() {
-                $('#system-info').toggle();
-                if ($('#system-info').is(':visible')) {
-                    $('#system-info').html('<p><span class="spinner is-active"></span> Ładowanie informacji systemowych...</p>');
-                    
-                    // Tutaj możesz dodać AJAX do pobrania szczegółowych informacji
-                    setTimeout(function() {
-                        $('#system-info').html('<pre><?php echo esc_html($this->get_system_info()); ?></pre>');
-                    }, 500);
-                }
-            });
+            var $systemInfo = $('#system-info');
+            var isVisible = $systemInfo.is(':visible');
+            
+            $systemInfo.toggle();
+            
+            if ($systemInfo.is(':visible') && $systemInfo.html().trim() === '') {
+                $systemInfo.html('<p><span class="spinner is-active"></span> Ładowanie informacji systemowych...</p>');
+                
+                // Pobierz informacje systemowe via AJAX lub bezpośrednio
+                $.post(ajaxurl, {
+                    action: 'login_blocker_get_system_info',
+                    nonce: '<?php echo wp_create_nonce('login_blocker_debug'); ?>'
+                }, function(response) {
+                    if (response.success) {
+                        $systemInfo.html('<pre style="background: #f6f7f7; padding: 15px; border-radius: 4px; overflow: auto; max-height: 400px; white-space: pre-wrap;">' + response.data + '</pre>');
+                    } else {
+                        $systemInfo.html('<div class="notice notice-error"><p>Błąd ładowania informacji systemowych.</p></div>');
+                    }
+                }).fail(function() {
+                    $systemInfo.html('<div class="notice notice-error"><p>Błąd połączenia z serwerem.</p></div>');
+                });
+            }
         });
-        </script>
-        <?php
-    }
+    });
+    </script>
+    <?php
+}
 
+    public function ajax_get_system_info() {
+    if (!current_user_can('manage_options')) {
+        wp_die('Brak uprawnień');
+    }
+    
+    if (!wp_verify_nonce($_POST['nonce'], 'login_blocker_debug')) {
+        wp_die('Błąd bezpieczeństwa');
+    }
+    
+    wp_send_json_success($this->get_system_info());
+}
     public function display_email_test_tab() {
         ?>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
