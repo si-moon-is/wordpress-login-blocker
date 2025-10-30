@@ -437,6 +437,43 @@ class LoginBlocker_Admin_Debug {
                 });
             }
         });
+
+            $('#test-geolocation').on('click', function() {
+            var $button = $(this);
+            var $result = $('#geo-test-result');
+            
+            $button.prop('disabled', true).text('Testowanie...');
+            $result.html('<p><span class="spinner is-active"></span> Testowanie geolokalizacji...</p>');
+            
+            $.post(ajaxurl, {
+                action: 'login_blocker_test_geolocation',
+                nonce: '<?php echo wp_create_nonce('login_blocker_debug'); ?>',
+                test_ip: '8.8.8.8' // Przykładowe IP do testu (Google DNS)
+            }, function(response) {
+                $button.prop('disabled', false).text('Test Geolokalizacji');
+                
+                if (response.success) {
+                    var html = '<div class="notice notice-success">';
+                    html += '<h4>Geolokalizacja dla IP: ' + response.data.ip + '</h4>';
+                    html += '<table class="widefat" style="width: 100%; margin-top: 10px;">';
+                    html += '<tr><td><strong>Kraj:</strong></td><td>' + (response.data.country_name || 'Nieznany') + '</td></tr>';
+                    html += '<tr><td><strong>Kod kraju:</strong></td><td>' + (response.data.country_code || '—') + '</td></tr>';
+                    html += '<tr><td><strong>Miasto:</strong></td><td>' + (response.data.city || '—') + '</td></tr>';
+                    html += '<tr><td><strong>Region:</strong></td><td>' + (response.data.region_name || '—') + '</td></tr>';
+                    html += '<tr><td><strong>Dostawca:</strong></td><td>' + (response.data.isp || '—') + '</td></tr>';
+                    html += '<tr><td><strong>Szerokość geogr.:</strong></td><td>' + (response.data.latitude || '—') + '</td></tr>';
+                    html += '<tr><td><strong>Długość geogr.:</strong></td><td>' + (response.data.longitude || '—') + '</td></tr>';
+                    html += '</table>';
+                    html += '</div>';
+                    $result.html(html);
+                } else {
+                    $result.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
+                }
+            }).fail(function() {
+                $button.prop('disabled', false).text('Test Geolokalizacji');
+                $result.html('<div class="notice notice-error"><p>Błąd połączenia z serwerem.</p></div>');
+            });
+        });
     });
     </script>
     <?php
