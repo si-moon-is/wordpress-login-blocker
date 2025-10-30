@@ -770,33 +770,28 @@ public function ajax_test_geolocation() {
         wp_die('Błąd bezpieczeństwa');
     }
     
-    $test_ip = sanitize_text_field($_POST['test_ip']);
+    $test_ip = sanitize_text_field($_POST['test_ip'] ?? '8.8.8.8');
     
     if (empty($test_ip)) {
         wp_send_json_error('Brak adresu IP do testu');
         return;
     }
     
-    // Użyj funkcji geolokalizacji z głównej klasy
-    $geolocation_data = $this->admin->get_main_class()->get_ip_geolocation($test_ip);
+    // Użyj funkcji geolokalizacji
+    $geolocation_class = new LoginBlocker_Geolocation();
+    $geolocation_data = $geolocation_class->get_location($test_ip);
     
-    if ($geolocation_data) {
+    if ($geolocation_data && $geolocation_data['country_code'] !== 'XX') {
         $result = array(
             'ip' => $test_ip,
             'country_name' => $geolocation_data['country_name'] ?? null,
             'country_code' => $geolocation_data['country_code'] ?? null,
             'city' => $geolocation_data['city'] ?? null,
-            'region_name' => $geolocation_data['region_name'] ?? null,
+            'region_name' => $geolocation_data['region'] ?? null,
             'isp' => $geolocation_data['isp'] ?? null,
             'latitude' => $geolocation_data['latitude'] ?? null,
             'longitude' => $geolocation_data['longitude'] ?? null
         );
-        
-        // Log testu
-        $this->admin->get_main_class()->log_info("Test geolokalizacji wykonany", array(
-            'test_ip' => $test_ip,
-            'geolocation_data' => $result
-        ));
         
         wp_send_json_success($result);
     } else {
