@@ -45,7 +45,7 @@ class LoginBlocker_Admin {
         add_action('wp_dashboard_setup', array($this, 'add_dashboard_widget'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('wp_ajax_login_blocker_get_system_info', array($this->debug, 'ajax_get_system_info'));
-        add_action('wp_ajax_login_blocker_test_geolocation', array($this->debug, 'ajax_test_geolocation'));
+        add_action('wp_ajax_login_blocker_test_geolocation', array($this, 'handle_geolocation_test'));
         
         // Ajax dla odblokowywania IP
         add_action('wp_ajax_unblock_ip', array($this, 'ajax_unblock_ip'));
@@ -556,4 +556,9 @@ To jest automatyczna wiadomość testowa.
     public function register_settings() {
         $this->settings->register_settings();
     }
+
+    public function handle_geolocation_test() {
+    $geolocation_class = new LoginBlocker_Geolocation();
+    $geolocation_class->ajax_test_geolocation();
+}
 }
