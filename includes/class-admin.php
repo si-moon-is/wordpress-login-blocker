@@ -13,15 +13,30 @@ class LoginBlocker_Admin {
     private $main_class;
     private $table_name;
     private $database;
+    private $analytics;
+    private $debug;
+    private $settings;
+    private $export;
+    private $blocked;
     
     public function __construct($main_class) {
         global $wpdb;
         $this->main_class = $main_class;
         $this->database = $main_class->get_database();
         $this->table_name = $wpdb->prefix . 'login_blocker_attempts'; 
-        //$this->table_name = $main_class->get_table_name();
-        //$this->database = $main_class->get_database();
-    
+        
+        // Inicjalizacja podklas
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'class-admin-analytics.php';
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'class-admin-debug.php';
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'class-admin-settings.php';
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'class-admin-export.php';
+        require_once LOGIN_BLOCKER_PLUGIN_PATH . 'class-admin-blocked.php';
+        
+        $this->analytics = new LoginBlocker_Admin_Analytics($this);
+        $this->debug = new LoginBlocker_Admin_Debug($this);
+        $this->settings = new LoginBlocker_Admin_Settings($this);
+        $this->export = new LoginBlocker_Admin_Export($this);
+        $this->blocked = new LoginBlocker_Admin_Blocked($this);
         
         // Rejestracja hooków admina
         add_action('admin_menu', array($this, 'add_admin_menu'));
@@ -34,6 +49,19 @@ class LoginBlocker_Admin {
         add_action('wp_ajax_unblock_ip', array($this, 'ajax_unblock_ip'));
         // Ajax dla testowania email
         add_action('wp_ajax_test_email_config', array($this, 'test_email_config'));
+    }
+    
+    // Gettery dla podklas
+    public function get_main_class() {
+        return $this->main_class;
+    }
+    
+    public function get_table_name() {
+        return $this->table_name;
+    }
+    
+    public function get_database() {
+        return $this->database;
     }
     
     // Dodawanie menu admina
@@ -54,7 +82,7 @@ class LoginBlocker_Admin {
             'Zablokowane IP',
             'manage_options',
             'login-blocker-blocked',
-            array($this, 'blocked_ips_page')
+            array($this->blocked, 'blocked_ips_page')
         );
         
         add_submenu_page(
@@ -63,7 +91,7 @@ class LoginBlocker_Admin {
             'Statystyki & Próby',
             'manage_options',
             'login-blocker-analytics',
-            array($this, 'analytics_page')
+            array($this->analytics, 'analytics_page')
         );
         
         add_submenu_page(
@@ -72,7 +100,7 @@ class LoginBlocker_Admin {
             'Debug & Logi',
             'manage_options',
             'login-blocker-debug',
-            array($this, 'debug_page')
+            array($this->debug, 'debug_page')
         );
 
         add_submenu_page(
@@ -81,7 +109,7 @@ class LoginBlocker_Admin {
             __('Eksport Danych', 'login-blocker'),
             'export',
             'login-blocker-export',
-            array($this, 'export_page')
+            array($this->export, 'export_page')
         );
         
         add_submenu_page(
@@ -90,7 +118,7 @@ class LoginBlocker_Admin {
             'Ustawienia',
             'manage_options',
             'login-blocker-settings',
-            array($this, 'settings_page')
+            array($this->settings, 'settings_page')
         );
     }
     
@@ -229,477 +257,6 @@ class LoginBlocker_Admin {
             'href'   => admin_url('admin.php?page=login-blocker-settings'),
             'meta'   => array()
         ));
-    }
-
-    // Strona z zablokowanymi IP z paginacją i wyszukiwaniem
-    public function blocked_ips_page() {
-        global $wpdb;
-        
-        // Paginacja
-        $per_page = 50;
-        $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-        $offset = ($current_page - 1) * $per_page;
-        
-        // Wyszukiwanie
-        $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-        $search_sql = '';
-        if (!empty($search)) {
-            $search_sql = $wpdb->prepare(" AND ip_address LIKE %s", '%' . $wpdb->esc_like($search) . '%');
-        }
-        
-        // Obsługa akcji
-        if (isset($_GET['action']) && check_admin_referer('login_blocker_action')) {
-            if ($_GET['action'] === 'unblock' && isset($_GET['ip'])) {
-                $ip = sanitize_text_field($_GET['ip']);
-                $wpdb->update(
-                    $this->table_name,
-                    array('is_blocked' => 0, 'attempts' => 0, 'block_until' => null),
-                    array('ip_address' => $ip)
-                );
-                
-                $this->main_class->log_info("IP odblokowane ręcznie", array(
-                    'ip' => $ip,
-                    'admin_user' => wp_get_current_user()->user_login
-                ));
-                
-                echo '<div class="notice notice-success is-dismissible"><p>IP odblokowane.</p></div>';
-            } elseif ($_GET['action'] === 'unblock_all') {
-                $wpdb->update(
-                    $this->table_name,
-                    array('is_blocked' => 0, 'attempts' => 0, 'block_until' => null),
-                    array('is_blocked' => 1)
-                );
-                echo '<div class="notice notice-success is-dismissible"><p>Wszystkie IP odblokowane.</p></div>';
-            } elseif ($_GET['action'] === 'delete' && isset($_GET['ip'])) {
-                $ip = sanitize_text_field($_GET['ip']);
-                $wpdb->delete($this->table_name, array('ip_address' => $ip));
-                echo '<div class="notice notice-success is-dismissible"><p>Rekord usunięty.</p></div>';
-            } elseif ($_GET['action'] === 'delete_all_blocked') {
-                $wpdb->delete($this->table_name, array('is_blocked' => 1));
-                echo '<div class="notice notice-success is-dismissible"><p>Wszystkie zablokowane rekordy usunięte.</p></div>';
-            }
-        }
-        
-        // Pobieranie zablokowanych IP
-        $blocked_ips = $wpdb->get_results(
-            $wpdb->prepare("
-                SELECT * FROM {$this->table_name} 
-                WHERE is_blocked = 1 {$search_sql}
-                ORDER BY last_attempt DESC 
-                LIMIT %d, %d
-            ", $offset, $per_page)
-        );
-        
-        // Liczba wszystkich zablokowanych IP
-        $total_blocked = $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->table_name} WHERE is_blocked = 1 {$search_sql}"
-        );
-        
-        $total_pages = ceil($total_blocked / $per_page);
-        
-        ?>
-        <div class="wrap">
-            <h1>Login Blocker - Zablokowane adresy IP</h1>
-            
-            <!-- Formularz wyszukiwania -->
-            <div class="card" style="margin-bottom: 20px;">
-                <form method="get" action="<?php echo admin_url('admin.php'); ?>">
-                    <input type="hidden" name="page" value="login-blocker-blocked">
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="text" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Wyszukaj adres IP..." style="width: 300px;">
-                        <button type="submit" class="button button-primary">Szukaj</button>
-                        <?php if (!empty($search)): ?>
-                            <a href="<?php echo admin_url('admin.php?page=login-blocker-blocked'); ?>" class="button">Wyczyść</a>
-                        <?php endif; ?>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- Statystyki -->
-            <div class="card" style="margin-bottom: 20px;">
-                <h3>Statystyki</h3>
-                <p>Znaleziono: <strong><?php echo $total_blocked; ?></strong> zablokowanych adresów IP</p>
-                <?php if (!empty($search)): ?>
-                    <p>Wyniki wyszukiwania dla: <code><?php echo esc_html($search); ?></code></p>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Akcje masowe -->
-            <div class="card" style="margin-bottom: 20px;">
-                <h3>Akcje</h3>
-                <div style="display: flex; gap: 10px;">
-                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock_all'), 'login_blocker_action'); ?>" 
-                       class="button" 
-                       onclick="return confirm('Czy na pewno chcesz odblokować WSZYSTKIE adresy IP?')">
-                       Odblokuj wszystkie
-                    </a>
-                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete_all_blocked'), 'login_blocker_action'); ?>" 
-                       class="button button-danger" 
-                       onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE zablokowane rekordy?')">
-                       Usuń wszystkie zablokowane
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Tabela zablokowanych IP -->
-            <div class="card">
-                <h2>Obecnie zablokowane adresy IP</h2>
-                <?php if ($blocked_ips): ?>
-                    <div style="overflow-x: auto; width: 100%;">
-                        <table class="wp-list-table widefat fixed striped" style="width: 100%; min-width: 1000px;">
-                            <thead>
-                                <tr>
-                                    <th style="width: 15%;">Adres IP</th>
-                                    <th style="width: 20%;">Użytkownik</th>
-                                    <th style="width: 10%;">Próby</th>
-                                    <th style="width: 15%;">Ostatnia próba</th>
-                                    <th style="width: 15%;">Zablokowany do</th>
-                                    <th style="width: 10%;">Kraj</th>
-                                    <th style="width: 15%;">Akcje</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($blocked_ips as $ip): ?>
-                                    <tr>
-                                        <td><?php echo esc_html($ip->ip_address); ?></td>
-                                        <td><?php echo esc_html($ip->username); ?></td>
-                                        <td><?php echo esc_html($ip->attempts); ?></td>
-                                        <td><?php echo esc_html($ip->last_attempt); ?></td>
-                                        <td><?php echo esc_html($ip->block_until); ?></td>
-                                        <td>
-                                            <?php if (!empty($ip->country_code) && $ip->country_code !== 'LOCAL'): ?>
-                                                <?php 
-                                                    $country_code_lower = strtolower($ip->country_code);
-                                                    $flag_url = "https://flagcdn.com/24x18/{$country_code_lower}.png";
-                                                ?>
-                                                <img src="<?php echo esc_url($flag_url); ?>" alt="<?php echo esc_attr($ip->country_code); ?>" title="<?php echo esc_attr($ip->country_name); ?>" style="width: 24px; height: 18px;">
-                                            <?php else: ?>
-                                                <span style="color: #999;">—</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Paginacja -->
-                    <?php if ($total_pages > 1): ?>
-                        <div class="tablenav">
-                            <div class="tablenav-pages">
-                                <?php
-                                echo paginate_links(array(
-                                    'base' => add_query_arg('paged', '%#%'),
-                                    'format' => '',
-                                    'prev_text' => '&laquo;',
-                                    'next_text' => '&raquo;',
-                                    'total' => $total_pages,
-                                    'current' => $current_page
-                                ));
-                                ?>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                    
-                <?php else: ?>
-                    <p><?php echo empty($search) ? 'Brak zablokowanych adresów IP.' : 'Brak wyników wyszukiwania.'; ?></p>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php
-    }
-
-    //Tu był debug    
-    public function export_page() {
-        if (!current_user_can('export')) {
-            wp_die(esc_html__('Brak uprawnień', 'login-blocker'));
-        }
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html__('Eksport Danych Login Blocker', 'login-blocker'); ?></h1>
-            
-            <div class="card">
-                <h2><?php echo esc_html__('Eksport Prób Logowania', 'login-blocker'); ?></h2>
-                <form method="post" action="<?php echo admin_url('admin.php'); ?>">
-                    <input type="hidden" name="login_blocker_export" value="1">
-                    <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row">
-                                <label for="export-format"><?php echo esc_html__('Format eksportu', 'login-blocker'); ?></label>
-                            </th>
-                            <td>
-                                <select name="format" id="export-format" required>
-                                    <option value="csv">CSV</option>
-                                    <option value="json">JSON</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                <label for="export-period"><?php echo esc_html__('Okres (dni)', 'login-blocker'); ?></label>
-                            </th>
-                            <td>
-                                <input type="number" name="period" id="export-period" 
-                                       min="1" max="365" value="30" required>
-                                <p class="description"><?php echo esc_html__('Dane z ostatnich X dni', 'login-blocker'); ?></p>
-                            </td>
-                        </tr>
-                    </table>
-                    <p class="submit">
-                        <button type="submit" class="button button-primary">
-                            <?php echo esc_html__('Eksportuj Dane', 'login-blocker'); ?>
-                        </button>
-                    </p>
-                </form>
-            </div>
-
-            <div class="card">
-                <h2><?php echo esc_html__('Eksport Statystyk', 'login-blocker'); ?></h2>
-                <form method="post" action="<?php echo admin_url('admin.php'); ?>">
-                    <input type="hidden" name="login_blocker_export" value="1">
-                    <input type="hidden" name="type" value="stats">
-                    <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row">
-                                <label for="stats-period"><?php echo esc_html__('Okres (dni)', 'login-blocker'); ?></label>
-                            </th>
-                            <td>
-                                <input type="number" name="period" id="stats-period" 
-                                       min="1" max="365" value="30" required>
-                            </td>
-                        </tr>
-                    </table>
-                    <p class="submit">
-                        <button type="submit" class="button button-secondary">
-                            <?php echo esc_html__('Eksportuj Statystyki', 'login-blocker'); ?>
-                        </button>
-                    </p>
-                </form>
-            </div>
-        </div>
-        <?php
-    }
-    
-    // Rejestracja ustawień
-    public function register_settings() {
-        register_setting('login_blocker_settings', 'login_blocker_max_attempts');
-        register_setting('login_blocker_settings', 'login_blocker_block_duration');
-        register_setting('login_blocker_settings', 'login_blocker_debug_mode');
-        register_setting('login_blocker_settings', 'login_blocker_error_notifications');
-        
-        // NOWE USTAWIENIA EMAIL
-        register_setting('login_blocker_settings', 'login_blocker_smtp_enabled');
-        register_setting('login_blocker_settings', 'login_blocker_smtp_host');
-        register_setting('login_blocker_settings', 'login_blocker_smtp_port');
-        register_setting('login_blocker_settings', 'login_blocker_smtp_username');
-        register_setting('login_blocker_settings', 'login_blocker_smtp_password');
-        register_setting('login_blocker_settings', 'login_blocker_smtp_encryption');
-        register_setting('login_blocker_settings', 'login_blocker_notification_email');
-        
-        add_settings_section(
-            'login_blocker_main',
-            'Główne ustawienia',
-            array($this, 'settings_section_callback'),
-            'login-blocker-settings'
-        );
-        
-        add_settings_field(
-            'login_blocker_max_attempts',
-            'Maksymalna liczba prób',
-            array($this, 'max_attempts_callback'),
-            'login-blocker-settings',
-            'login_blocker_main'
-        );
-        
-        add_settings_field(
-            'login_blocker_block_duration',
-            'Czas blokady (w sekundach)',
-            array($this, 'block_duration_callback'),
-            'login-blocker-settings',
-            'login_blocker_main'
-        );
-        
-        add_settings_field(
-            'login_blocker_debug_mode',
-            'Tryb Debugowania',
-            array($this, 'debug_mode_callback'),
-            'login-blocker-settings',
-            'login_blocker_main'
-        );
-        
-        add_settings_field(
-            'login_blocker_error_notifications',
-            'Powiadomienia o Błędach',
-            array($this, 'error_notifications_callback'),
-            'login-blocker-settings',
-            'login_blocker_main'
-        );
-        
-        // NOWA SEKCJA DLA USTAWIENIA EMAIL
-        add_settings_section(
-            'login_blocker_email',
-            'Ustawienia Powiadomień Email',
-            array($this, 'email_section_callback'),
-            'login-blocker-settings'
-        );
-        
-        add_settings_field(
-            'login_blocker_notification_email',
-            'Email do powiadomień',
-            array($this, 'notification_email_callback'),
-            'login-blocker-settings',
-            'login_blocker_email'
-        );
-        
-        add_settings_field(
-            'login_blocker_smtp_enabled',
-            'Własny serwer SMTP',
-            array($this, 'smtp_enabled_callback'),
-            'login-blocker-settings',
-            'login_blocker_email'
-        );
-        
-        add_settings_field(
-            'login_blocker_smtp_host',
-            'Serwer SMTP',
-            array($this, 'smtp_host_callback'),
-            'login-blocker-settings',
-            'login_blocker_email'
-        );
-        
-        add_settings_field(
-            'login_blocker_smtp_port',
-            'Port SMTP',
-            array($this, 'smtp_port_callback'),
-            'login-blocker-settings',
-            'login_blocker_email'
-        );
-        
-        add_settings_field(
-            'login_blocker_smtp_username',
-            'Nazwa użytkownika SMTP',
-            array($this, 'smtp_username_callback'),
-            'login-blocker-settings',
-            'login_blocker_email'
-        );
-        
-        add_settings_field(
-            'login_blocker_smtp_password',
-            'Hasło SMTP',
-            array($this, 'smtp_password_callback'),
-            'login-blocker-settings',
-            'login_blocker_email'
-        );
-        
-        add_settings_field(
-            'login_blocker_smtp_encryption',
-            'Szyfrowanie',
-            array($this, 'smtp_encryption_callback'),
-            'login-blocker-settings',
-            'login_blocker_email'
-        );
-        
-        // NOWE POLE DO TESTOWANIA EMAIL
-        add_settings_field(
-            'login_blocker_test_email',
-            'Test powiadomień',
-            array($this, 'test_email_callback'),
-            'login-blocker-settings',
-            'login_blocker_email'
-        );
-    }
-
-    public function email_section_callback() {
-        echo '<p>Konfiguracja powiadomień email o błędach i atakach. Jeśli nie skonfigurujesz własnego SMTP, zostanie użyty domyślny system WordPress.</p>';
-    }
-    
-    public function notification_email_callback() {
-        $value = get_option('login_blocker_notification_email', get_option('admin_email'));
-        echo '<input type="email" name="login_blocker_notification_email" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">Adres email na który będą wysyłane powiadomienia (domyślnie: admin)</p>';
-    }
-    
-    public function smtp_enabled_callback() {
-        $value = get_option('login_blocker_smtp_enabled', false);
-        echo '<label><input type="checkbox" name="login_blocker_smtp_enabled" value="1" ' . checked(1, $value, false) . ' /> Użyj własnego serwera SMTP</label>';
-        echo '<p class="description">Włącz jeśli chcesz używać własnego serwera pocztowego zamiast domyślnego systemu WordPress</p>';
-    }
-
-    public function smtp_host_callback() {
-        $value = get_option('login_blocker_smtp_host', '');
-        echo '<input type="text" name="login_blocker_smtp_host" value="' . esc_attr($value) . '" class="regular-text" placeholder="smtp.example.com" />';
-        echo '<p class="description">Adres serwera SMTP</p>';
-    }
-
-    public function smtp_port_callback() {
-        $value = get_option('login_blocker_smtp_port', '587');
-        echo '<input type="number" name="login_blocker_smtp_port" value="' . esc_attr($value) . '" class="small-text" min="1" max="65535" />';
-        echo '<p class="description">Port serwera SMTP (zazwyczaj 587, 465 lub 25)</p>';
-    }
-
-    public function smtp_username_callback() {
-        $value = get_option('login_blocker_smtp_username', '');
-        echo '<input type="text" name="login_blocker_smtp_username" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">Nazwa użytkownika do serwera SMTP</p>';
-    }
-
-    public function smtp_password_callback() {
-        $value = get_option('login_blocker_smtp_password', '');
-        echo '<input type="password" name="login_blocker_smtp_password" value="' . esc_attr($value) . '" class="regular-text" />';
-        echo '<p class="description">Hasło do serwera SMTP</p>';
-    }
-
-    public function smtp_encryption_callback() {
-        $value = get_option('login_blocker_smtp_encryption', 'tls');
-        echo '<select name="login_blocker_smtp_encryption">';
-        echo '<option value="" ' . selected($value, '', false) . '>Brak</option>';
-        echo '<option value="ssl" ' . selected($value, 'ssl', false) . '>SSL</option>';
-        echo '<option value="tls" ' . selected($value, 'tls', false) . '>TLS</option>';
-        echo '</select>';
-        echo '<p class="description">Typ szyfrowania (zazwyczaj TLS dla portu 587, SSL dla portu 465)</p>';
-    }
-
-    public function test_email_callback() {
-        echo '<button type="button" id="test-email-btn" class="button button-secondary">Wyślij testowego emaila</button>';
-        echo '<span id="test-email-result" style="margin-left: 10px;"></span>';
-        echo '<p class="description">Wyślij testowego emaila aby sprawdzić konfigurację</p>';
-    }
-    
-    public function debug_mode_callback() {
-        $value = get_option('login_blocker_debug_mode', false);
-        echo '<label><input type="checkbox" name="login_blocker_debug_mode" value="1" ' . checked(1, $value, false) . ' /> Włącz tryb debugowania</label>';
-        echo '<p class="description">';
-        echo 'Włącz: loguje WSZYSTKIE zdarzenia (DEBUG, INFO, WARNING, ERROR)<br>';
-        echo 'Wyłącz: loguje TYLKO błędy i ostrzeżenia (WARNING, ERROR)';
-        echo '</p>';
-    }
-
-    public function error_notifications_callback() {
-        $value = get_option('login_blocker_error_notifications', true);
-        echo '<label><input type="checkbox" name="login_blocker_error_notifications" value="1" ' . checked(1, $value, false) . ' /> Włącz powiadomienia email o błędach</label>';
-        echo '<p class="description">Wysyła powiadomienia na adres admina gdy wystąpią krytyczne błędy.</p>';
-    }
-    
-    public function settings_section_callback() {
-        echo '<p>Konfiguracja ustawień blokowania logowania</p>';
-    }
-    
-    public function max_attempts_callback() {
-        $value = get_option('login_blocker_max_attempts', 5);
-        echo '<input type="number" name="login_blocker_max_attempts" value="' . esc_attr($value) . '" min="1" max="20" />';
-        echo '<p class="description">Liczba nieudanych prób logowania po której IP zostanie zablokowane</p>';
-    }
-    
-    public function block_duration_callback() {
-        $value = get_option('login_blocker_block_duration', 3600);
-        echo '<input type="number" name="login_blocker_block_duration" value="' . esc_attr($value) . '" min="60" />';
-        echo '<p class="description">Czas blokady IP w sekundach (3600 = 1 godzina, 86400 = 24 godziny)</p>';
     }
     
     // Główna strona admina
@@ -840,39 +397,6 @@ class LoginBlocker_Admin {
                 <?php else: ?>
                     <p>Brak zapisanych prób logowania.</p>
                 <?php endif; ?>
-            </div>
-        </div>
-        <?php
-    }
-    
-    // Strona ustawień
-    public function settings_page() {
-        ?>
-        <div class="wrap">
-            <h1>Login Blocker - Ustawienia</h1>
-            
-            <form method="post" action="options.php">
-                <?php
-                settings_fields('login_blocker_settings');
-                do_settings_sections('login-blocker-settings');
-                submit_button();
-                ?>
-            </form>
-            <div class="card">
-                <h2>Status Aktualizacji</h2>
-                <?php $this->main_class->display_update_status(); ?>
-            </div>
-            <div class="card">
-                <h2>Statystyki</h2>
-                <?php
-                global $wpdb;
-                $total_blocked = $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name} WHERE is_blocked = 1");
-                $total_attempts = $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name}");
-                $unique_ips = $wpdb->get_var("SELECT COUNT(DISTINCT ip_address) FROM {$this->table_name}");
-                ?>
-                <p>Obecnie zablokowanych IP: <strong><?php echo $total_blocked; ?></strong></p>
-                <p>Wszystkich zapisanych prób: <strong><?php echo $total_attempts; ?></strong></p>
-                <p>Unikalnych adresów IP: <strong><?php echo $unique_ips; ?></strong></p>
             </div>
         </div>
         <?php
@@ -1025,6 +549,9 @@ To jest automatyczna wiadomość testowa.
             )
         ));
     }
-
-    // Tutaj były statystyki
+    
+    // Rejestracja ustawień - delegowane do klasy settings
+    public function register_settings() {
+        $this->settings->register_settings();
+    }
 }
