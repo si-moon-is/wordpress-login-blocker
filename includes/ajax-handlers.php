@@ -64,9 +64,9 @@ class LoginBlocker_Ajax {
     
     global $wpdb;
     $stats = array(
-        'blocked' => intval($wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}login_attempts WHERE is_blocked = 1")),
+        'blocked' => intval($wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}login_blocker_attempts WHERE is_blocked = 1")),
         'attempts' => intval($wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}login_attempts WHERE last_attempt > %s",
+            "SELECT COUNT(*) FROM {$wpdb->prefix}login_blocker_attempts WHERE last_attempt > %s",
             date('Y-m-d H:i:s', time() - 3600)
         )))
     );
@@ -112,7 +112,7 @@ class LoginBlocker_Ajax {
             COUNT(*) as attempts,
             COUNT(DISTINCT ip_address) as unique_ips,
             SUM(is_blocked) as blocked
-        FROM {$wpdb->prefix}login_attempts 
+        FROM {$wpdb->prefix}login_blocker_attempts 
         WHERE last_attempt >= %s
         GROUP BY DATE(last_attempt)
         ORDER BY date ASC
