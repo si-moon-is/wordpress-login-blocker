@@ -140,7 +140,7 @@ class LoginBlocker_Admin_Blocked {
                                     <th style="width: 15%;">Ostatnia próba</th>
                                     <th style="width: 15%;">Zablokowany do</th>
                                     <th style="width: 10%;">Kraj</th>
-                                    <th style="width: 15%;">Akcje</th>
+                                    <th style="width: 15%;">Akcjes</th>
                                 </tr>
                             </thead>
                             <tbody>
