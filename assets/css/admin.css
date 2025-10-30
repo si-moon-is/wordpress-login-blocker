@@ -364,3 +364,87 @@
         height: 250px;
     }
 }
+
+/* Style dla tabulatorów */
+.login-blocker-tab-content {
+    margin-top: 20px;
+}
+
+.nav-tab-wrapper {
+    margin-bottom: 0;
+    border-bottom: 1px solid #ccd0d4;
+}
+
+.nav-tab {
+    font-size: 14px;
+    padding: 8px 15px;
+    margin-bottom: -1px;
+}
+
+.nav-tab-active {
+    background: #fff;
+    border-bottom-color: #fff;
+}
+
+/* Responsywność tabulatorów */
+@media screen and (max-width: 782px) {
+    .nav-tab {
+        display: block;
+        width: 100%;
+        margin-bottom: 2px;
+        text-align: center;
+    }
+    
+    .nav-tab-wrapper {
+        border-bottom: none;
+    }
+}
+
+/* Style dla zawartości zakładek */
+.login-blocker-tab-section {
+    margin-bottom: 30px;
+}
+
+.login-blocker-tab-section h3 {
+    border-bottom: 1px solid #ccd0d4;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+/* Przyciski w tabelach */
+.button-small {
+    padding: 2px 8px;
+    font-size: 11px;
+    height: auto;
+    line-height: 1.4;
+}
+
+/* Flagi w tabelach */
+.country-flag-small {
+    width: 16px;
+    height: 12px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.country-flag-medium {
+    width: 24px;
+    height: 18px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* Statystyki w zakładkach */
+.stats-highlight {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #2271b1;
+}
+
+.stats-danger {
+    color: #d63638;
+}
+
+.stats-success {
+    color: #00a32a;
+}
