@@ -1186,7 +1186,7 @@ To jest automatyczna wiadomość z systemu Login Blocker.
         return "✅ Zapisano (" . count($lines) . " wpisów, " . round($file_size / 1024, 2) . " KB)";
     }
 
-    private function display_update_status() {
+    public function display_update_status() {
         if (class_exists('LoginBlocker_Updater')) {
             $updater = new LoginBlocker_Updater(__FILE__);
             $status = $updater->get_update_status();
