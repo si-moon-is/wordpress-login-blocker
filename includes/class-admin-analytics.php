@@ -167,12 +167,12 @@ class LoginBlocker_Admin_Analytics {
                                     <td><?php echo esc_html($attempt->last_attempt); ?></td>
                                     <td>
                                         <div style="display: flex; align-items: center; gap: 5px;">
-                                            <?php if (!empty($attempt->country_code) && $attempt->country_code !== 'LOCAL'): ?>
+                                            <?php if (!empty(esc_html($attempt->country_code)) && esc_html($attempt->country_code) !== 'LOCAL'): ?>
                                                 <?php 
-                                                    $country_code_lower = strtolower($attempt->country_code);
+                                                    $country_code_lower = strtolower(esc_html($attempt->country_code));
                                                     $flag_url = "https://flagcdn.com/16x12/{$country_code_lower}.png";
                                                 ?>
-                                                <img src="<?php echo $flag_url; ?>" alt="<?php echo esc_attr($attempt->country_code); ?>" style="width: 16px; height: 12px;">
+                                                <img src="<?php echo $flag_url; ?>" alt="<?php echo esc_attr(esc_html($attempt->country_code)); ?>" style="width: 16px; height: 12px;">
                                             <?php endif; ?>
                                             <span style="font-family: monospace; font-size: 12px;"><?php echo esc_html($attempt->ip_address); ?></span>
                                         </div>
@@ -392,7 +392,7 @@ class LoginBlocker_Admin_Analytics {
                                     <td style="font-family: monospace; font-weight: bold;"><?php echo esc_html($ip->ip_address); ?></td>
                                     <td>
                                         <div style="display: flex; align-items: center; gap: 5px;">
-                                            <?php if (!empty($ip->country_code) && $ip->country_code !== 'LOCAL'): ?>
+                                            <?php if (!empty(esc_html($ip->country_code)) && esc_html($ip->country_code) !== 'LOCAL'): ?>
                                                 <?php 
                                                     $country_code_lower = strtolower($ip->country_code);
                                                     $flag_url = "https://flagcdn.com/16x12/{$country_code_lower}.png";
@@ -419,12 +419,12 @@ class LoginBlocker_Admin_Analytics {
                                     <td>
                                         <div style="display: flex; gap: 2px;">
                                             <?php if ($ip->is_blocked): ?>
-                                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" 
+                                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . esc_html($ip->ip_address)), 'login_blocker_action'); ?>" 
                                                    class="button button-small">
                                                    Odblokuj
                                                 </a>
                                             <?php endif; ?>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" 
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . esc_html($ip->ip_address)), 'login_blocker_action'); ?>" 
                                                class="button button-danger button-small" 
                                                onclick="return confirm('Usunąć?')">
                                                Usuń
