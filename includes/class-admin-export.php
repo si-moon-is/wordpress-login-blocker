@@ -365,4 +365,127 @@ class LoginBlocker_Admin_Export {
         </div>
         <?php
     }
+/**
+ * Obsługa żądań eksportu
+ */
+public function handle_export_request() {
+    // Sprawdź czy to żądanie eksportu
+    $is_export_request = isset($_POST['action']) && $_POST['action'] === 'login_blocker_export';
+    $is_export_get = isset($_GET['action']) && $_GET['action'] === 'login_blocker_export';
+    
+    if (!$is_export_request && !$is_export_get) {
+        return;
+    }
+
+    error_log('=== LOGIN BLOCKER EXPORT HANDLER TRIGGERED ===');
+
+    // Sprawdź nonce
+    $nonce = $_POST['export_nonce'] ?? ($_GET['export_nonce'] ?? '');
+    
+    if (!wp_verify_nonce($nonce, 'login_blocker_export')) {
+        error_log('ERROR: Nonce verification failed');
+        wp_die('Błąd bezpieczeństwa: Nieprawidłowy token.');
+    }
+
+    // Sprawdź uprawnienia
+    if (!current_user_can('export')) {
+        wp_die('Brak uprawnień do eksportu.');
+    }
+
+    // Pobierz parametry
+    $type = sanitize_text_field($_POST['type'] ?? ($_GET['type'] ?? 'data'));
+    $format = sanitize_text_field($_POST['format'] ?? ($_GET['format'] ?? 'csv'));
+    $period = intval($_POST['period'] ?? ($_GET['period'] ?? 30));
+    $log_file = sanitize_text_field($_GET['log_file'] ?? '');
+
+    error_log("Export - Type: $type, Format: $format, Period: $period");
+
+    // Załaduj eksportera
+    require_once LOGIN_BLOCKER_PLUGIN_PATH . 'includes/class-exporter.php';
+    $exporter = new LoginBlocker_Exporter();
+
+    try {
+        switch ($type) {
+            case 'stats':
+                $result = $exporter->export_stats($period);
+                break;
+                
+            case 'logs':
+                if (!empty($log_file)) {
+                    $this->export_single_log_file($log_file);
+                } else {
+                    $log_date = sanitize_text_field($_POST['log_date'] ?? '');
+                    $log_level = sanitize_text_field($_POST['log_level'] ?? 'all');
+                    $this->export_logs_filtered($log_date, $log_level);
+                }
+                break;
+                
+            case 'data':
+            default:
+                $result = $exporter->export($format, $period);
+                break;
+        }
+
+        if (isset($result) && !$result) {
+            throw new Exception('Eksport nie powiódł się');
+        }
+
+    } catch (Exception $e) {
+        wp_die('Błąd eksportu: ' . $e->getMessage());
+    }
+
+    exit;
+}
+
+/**
+ * Eksport pojedynczego pliku logów
+ */
+private function export_single_log_file($log_file) {
+    $log_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
+    
+    if (!file_exists($log_path)) {
+        wp_die('Plik logów nie istnieje: ' . esc_html($log_file));
+    }
+    
+    $file_size = filesize($log_path);
+    
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $log_file . '"');
+    header('Content-Length: ' . $file_size);
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    readfile($log_path);
+    exit;
+}
+
+/**
+ * Eksport logów z filtrami
+ */
+private function export_logs_filtered($log_date, $log_level) {
+    $main_class = $this->admin->get_main_class();
+    $log_files = $main_class->get_log_files();
+    
+    if (empty($log_files)) {
+        wp_die('Brak plików logów do eksportu.');
+    }
+    
+    $filename = 'login-blocker-logs-' . date('Y-m-d') . '.txt';
+    
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    foreach ($log_files as $log_file) {
+        $log_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
+        if (file_exists($log_path)) {
+            echo "=== File: {$log_file} ===\n";
+            echo file_get_contents($log_path);
+            echo "\n\n";
+        }
+    }
+    exit;
+}
+    
 }
