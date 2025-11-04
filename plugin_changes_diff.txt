@@ -1,0 +1,343 @@
+--- /mnt/data/plugin_diff_run/wordpress-login-blocker-main_original/login-blocker.php
++++ /mnt/data/plugin_diff_run/wordpress-login-blocker-main/login-blocker.php
+@@ -1,4 +1,15 @@
+ <?php
++// SECURITY: Ensure action handlers verify capability and nonce.
++if ( (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'login_blocker') !== false) ) {
++    if ( ! current_user_can( 'manage_options' ) ) {
++        wp_die( 'Brak dostępu' );
++    }
++    if ( isset($_REQUEST['_wpnonce']) ) {
++        check_admin_referer( 'login_blocker_action' );
++    }
++}
++
++
+ /**
+  * Plugin Name: Login Blocker
+  * Description: Blokuje IP po nieudanych próbach logowania z własnym panelem administracyjnym
+
+--- /mnt/data/plugin_diff_run/wordpress-login-blocker-main_original/includes/ajax-handlers.php
++++ /mnt/data/plugin_diff_run/wordpress-login-blocker-main/includes/ajax-handlers.php
+@@ -1,4 +1,15 @@
+ <?php
++// SECURITY: Ensure action handlers verify capability and nonce.
++if ( (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'login_blocker') !== false) ) {
++    if ( ! current_user_can( 'manage_options' ) ) {
++        wp_die( 'Brak dostępu' );
++    }
++    if ( isset($_REQUEST['_wpnonce']) ) {
++        check_admin_referer( 'login_blocker_action' );
++    }
++}
++
++
+ /**
+  * Login Blocker - AJAX Handlers
+  * Handles all AJAX requests for the plugin
+
+--- /mnt/data/plugin_diff_run/wordpress-login-blocker-main_original/includes/class-admin-analytics.php
++++ /mnt/data/plugin_diff_run/wordpress-login-blocker-main/includes/class-admin-analytics.php
+@@ -1,4 +1,15 @@
+ <?php
++// SECURITY: Ensure action handlers verify capability and nonce.
++if ( (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'login_blocker') !== false) ) {
++    if ( ! current_user_can( 'manage_options' ) ) {
++        wp_die( 'Brak dostępu' );
++    }
++    if ( isset($_REQUEST['_wpnonce']) ) {
++        check_admin_referer( 'login_blocker_action' );
++    }
++}
++
++
+ /**
+  * Login Blocker - Admin Analytics Class
+  * Handles analytics and statistics functionality
+@@ -39,7 +50,7 @@
+             <!-- Filtry okresu czasu -->
+             <div class="card" style="margin-bottom: 20px;">
+                 <h3>Filtruj statystyki</h3>
+-                <form method="get" action="<?php echo admin_url('admin.php'); ?>">
++                <form method="get" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
+                     <input type="hidden" name="page" value="login-blocker-analytics">
+                     <input type="hidden" name="tab" value="<?php echo esc_attr($current_tab); ?>">
+                     <label for="period">Okres czasu:</label>
+@@ -55,7 +66,7 @@
+             <!-- Tabulatory -->
+             <h2 class="nav-tab-wrapper">
+                 <?php foreach ($tabs as $tab_key => $tab_name): ?>
+-                    <a href="<?php echo admin_url('admin.php?page=login-blocker-analytics&tab=' . $tab_key . '&period=' . $period); ?>" 
++                    <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-analytics&tab=' . $tab_key . '&period=' . $period) ); ?>" 
+                        class="nav-tab <?php echo $current_tab === $tab_key ? 'nav-tab-active' : ''; ?>">
+                        <?php echo esc_html($tab_name); ?>
+                     </a>
+@@ -158,7 +169,7 @@
+         
+         <!-- Formularz wyszukiwania -->
+         <div style="margin-bottom: 20px;">
+-            <form method="get" action="<?php echo admin_url('admin.php'); ?>">
++            <form method="get" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
+                 <input type="hidden" name="page" value="login-blocker-analytics">
+                 <input type="hidden" name="tab" value="attempts">
+                 <input type="hidden" name="period" value="<?php echo esc_attr($period); ?>">
+@@ -166,7 +177,7 @@
+                     <input type="text" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Szukaj IP lub użytkownika..." style="width: 300px;">
+                     <button type="submit" class="button button-primary">Szukaj</button>
+                     <?php if (!empty($search)): ?>
+-                        <a href="<?php echo admin_url('admin.php?page=login-blocker-analytics&tab=attempts&period=' . $period); ?>" class="button">Wyczyść</a>
++                        <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-analytics&tab=attempts&period=' . $period) ); ?>" class="button">Wyczyść</a>
+                     <?php endif; ?>
+                 </div>
+             </form>
+@@ -232,13 +243,13 @@
+                                 <td>
+                                     <div style="display: flex; gap: 2px; flex-wrap: wrap;">
+                                         <?php if ($attempt->is_blocked): ?>
+-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" 
++                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
+                                                class="button button-small" 
+                                                title="Odblokuj IP">
+                                                Odblokuj
+                                             </a>
+                                         <?php endif; ?>
+-                                        <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" 
++                                        <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
+                                            class="button button-danger button-small" 
+                                            onclick="return confirm('Czy na pewno chcesz usunąć ten rekord?')"
+                                            title="Usuń rekord">
+@@ -333,7 +344,7 @@
+         ", date('Y-m-d', strtotime("-$period days"))));
+         ?>
+         <div class="card">
+-            <h3>Statystyki krajów (<?php echo $period; ?> dni)</h3>
++            <h3>Statystyki krajów (<?php echo esc_html( $period ); ?> dni)</h3>
+             <?php if ($country_stats): ?>
+                 <div style="overflow-x: auto;">
+                     <table class="wp-list-table widefat fixed striped" style="width: 100%;">
+@@ -395,7 +406,7 @@
+         ", date('Y-m-d', strtotime("-$period days"))));
+         ?>
+         <div class="card">
+-            <h3>Najczęściej atakowani użytkownicy (<?php echo $period; ?> dni)</h3>
++            <h3>Najczęściej atakowani użytkownicy (<?php echo esc_html( $period ); ?> dni)</h3>
+             <?php if ($top_users): ?>
+                 <div style="overflow-x: auto;">
+                     <table class="wp-list-table widefat fixed striped" style="width: 100%;">
+@@ -447,7 +458,7 @@
+         ", date('Y-m-d', strtotime("-$period days"))));
+         ?>
+         <div class="card">
+-            <h3>Najaktywniejsze adresy IP (<?php echo $period; ?> dni)</h3>
++            <h3>Najaktywniejsze adresy IP (<?php echo esc_html( $period ); ?> dni)</h3>
+             <?php if ($top_ips): ?>
+                 <div style="overflow-x: auto;">
+                     <table class="wp-list-table widefat fixed striped" style="width: 100%;">
+@@ -493,12 +504,12 @@
+                                     <td>
+                                         <div style="display: flex; gap: 2px;">
+                                             <?php if ($ip->is_blocked): ?>
+-                                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>"
++                                                <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>"
+                                                    class="button button-small">
+                                                    Odblokuj
+                                                 </a>
+                                             <?php endif; ?>
+-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" 
++                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
+                                                class="button button-danger button-small" 
+                                                onclick="return confirm('Usunąć?')">
+                                                Usuń
+@@ -520,7 +531,7 @@
+     public function display_map_tab($period) {
+         ?>
+         <div class="card">
+-            <h3>Mapa ataków (<?php echo $period; ?> dni)</h3>
++            <h3>Mapa ataków (<?php echo esc_html( $period ); ?> dni)</h3>
+             <?php $this->admin->get_main_class()->display_attack_map($period); ?>
+         </div>
+         <?php
+
+--- /mnt/data/plugin_diff_run/wordpress-login-blocker-main_original/includes/class-admin-blocked.php
++++ /mnt/data/plugin_diff_run/wordpress-login-blocker-main/includes/class-admin-blocked.php
+@@ -88,13 +88,13 @@
+             
+             <!-- Formularz wyszukiwania -->
+             <div class="card" style="margin-bottom: 20px;">
+-                <form method="get" action="<?php echo admin_url('admin.php'); ?>">
++                <form method="get" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
+                     <input type="hidden" name="page" value="login-blocker-blocked">
+                     <div style="display: flex; gap: 10px; align-items: center;">
+                         <input type="text" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Wyszukaj adres IP..." style="width: 300px;">
+                         <button type="submit" class="button button-primary">Szukaj</button>
+                         <?php if (!empty($search)): ?>
+-                            <a href="<?php echo admin_url('admin.php?page=login-blocker-blocked'); ?>" class="button">Wyczyść</a>
++                            <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-blocked') ); ?>" class="button">Wyczyść</a>
+                         <?php endif; ?>
+                     </div>
+                 </form>
+@@ -103,7 +103,7 @@
+             <!-- Statystyki -->
+             <div class="card" style="margin-bottom: 20px;">
+                 <h3>Statystyki</h3>
+-                <p>Znaleziono: <strong><?php echo $total_blocked; ?></strong> zablokowanych adresów IP</p>
++                <p>Znaleziono: <strong><?php echo esc_html( $total_blocked ); ?></strong> zablokowanych adresów IP</p>
+                 <?php if (!empty($search)): ?>
+                     <p>Wyniki wyszukiwania dla: <code><?php echo esc_html($search); ?></code></p>
+                 <?php endif; ?>
+@@ -113,12 +113,12 @@
+             <div class="card" style="margin-bottom: 20px;">
+                 <h3>Akcje</h3>
+                 <div style="display: flex; gap: 10px;">
+-                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock_all'), 'login_blocker_action'); ?>" 
++                    <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock_all'), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
+                        class="button" 
+                        onclick="return confirm('Czy na pewno chcesz odblokować WSZYSTKIE adresy IP?')">
+                        Odblokuj wszystkie
+                     </a>
+-                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete_all_blocked'), 'login_blocker_action'); ?>" 
++                    <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete_all_blocked'), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
+                        class="button button-danger" 
+                        onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE zablokowane rekordy?')">
+                        Usuń wszystkie zablokowane
+@@ -163,8 +163,8 @@
+                                             <?php endif; ?>
+                                         </td>
+                                         <td>
+-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
+-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
++                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button">Odblokuj</a>
++                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
+                                         </td>
+                                     </tr>
+                                 <?php endforeach; ?>
+
+--- /mnt/data/plugin_diff_run/wordpress-login-blocker-main_original/includes/class-admin-debug.php
++++ /mnt/data/plugin_diff_run/wordpress-login-blocker-main/includes/class-admin-debug.php
+@@ -58,7 +58,7 @@
+             <!-- Tabulatory -->
+             <h2 class="nav-tab-wrapper">
+                 <?php foreach ($tabs as $tab_key => $tab_name): ?>
+-                    <a href="<?php echo admin_url('admin.php?page=login-blocker-debug&tab=' . $tab_key); ?>" 
++                    <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-debug&tab=' . $tab_key) ); ?>" 
+                        class="nav-tab <?php echo $current_tab === $tab_key ? 'nav-tab-active' : ''; ?>">
+                        <?php echo esc_html($tab_name); ?>
+                     </a>
+@@ -137,7 +137,7 @@
+                         <ul style="list-style: none; padding: 0; margin: 0;">
+                             <?php foreach ($log_files as $log_file): ?>
+                                 <li style="margin-bottom: 5px;">
+-                                    <a href="<?php echo admin_url('admin.php?page=login-blocker-debug&tab=logs&log_file=' . urlencode($log_file)); ?>" 
++                                    <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-debug&tab=logs&log_file=' . urlencode($log_file)) ); ?>" 
+                                        style="display: block; padding: 8px; background: <?php echo $current_log === $log_file ? '#e0f0ff' : '#f6f7f7'; ?>; border-radius: 4px; text-decoration: none; font-size: 12px;"
+                                        title="<?php echo esc_attr($this->get_log_file_info($log_file)); ?>">
+                                         <strong><?php echo esc_html($log_file); ?></strong>
+@@ -284,7 +284,7 @@
+                                     <td><?php echo $this->get_log_file_mtime($log_file); ?></td>
+                                     <td><?php echo $this->estimate_log_lines($log_file); ?></td>
+                                     <td>
+-                                        <a href="<?php echo admin_url('admin.php?page=login-blocker-debug&tab=logs&log_file=' . urlencode($log_file)); ?>" 
++                                        <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-debug&tab=logs&log_file=' . urlencode($log_file)) ); ?>" 
+                                            class="button button-small">
+                                            <span class="dashicons dashicons-visibility" style="vertical-align: middle;"></span>
+                                            Przeglądaj
+@@ -547,7 +547,7 @@
+                         <?php echo get_option('login_blocker_error_notifications', true) ? 'WŁĄCZONE' : 'WYŁĄCZONE'; ?>
+                     </p>
+                     <p>
+-                        <a href="<?php echo admin_url('admin.php?page=login-blocker-settings'); ?>" class="button button-secondary">
++                        <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-settings') ); ?>" class="button button-secondary">
+                             Przejdź do Ustawień Email
+                         </a>
+                     </p>
+
+--- /mnt/data/plugin_diff_run/wordpress-login-blocker-main_original/includes/class-admin-export.php
++++ /mnt/data/plugin_diff_run/wordpress-login-blocker-main/includes/class-admin-export.php
+@@ -26,7 +26,7 @@
+             
+             <div class="card">
+                 <h2><?php echo esc_html__('Eksport Prób Logowania', 'login-blocker'); ?></h2>
+-                <form method="post" action="<?php echo admin_url('admin.php'); ?>">
++                <form method="post" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
+                     <input type="hidden" name="login_blocker_export" value="1">
+                     <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
+                     <table class="form-table">
+@@ -62,7 +62,7 @@
+ 
+             <div class="card">
+                 <h2><?php echo esc_html__('Eksport Statystyk', 'login-blocker'); ?></h2>
+-                <form method="post" action="<?php echo admin_url('admin.php'); ?>">
++                <form method="post" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
+                     <input type="hidden" name="login_blocker_export" value="1">
+                     <input type="hidden" name="type" value="stats">
+                     <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
+
+--- /mnt/data/plugin_diff_run/wordpress-login-blocker-main_original/includes/class-admin-settings.php
++++ /mnt/data/plugin_diff_run/wordpress-login-blocker-main/includes/class-admin-settings.php
+@@ -40,9 +40,9 @@
+                 $total_attempts = $wpdb->get_var("SELECT COUNT(*) FROM {$this->admin->get_table_name()}");
+                 $unique_ips = $wpdb->get_var("SELECT COUNT(DISTINCT ip_address) FROM {$this->admin->get_table_name()}");
+                 ?>
+-                <p>Obecnie zablokowanych IP: <strong><?php echo $total_blocked; ?></strong></p>
+-                <p>Wszystkich zapisanych prób: <strong><?php echo $total_attempts; ?></strong></p>
+-                <p>Unikalnych adresów IP: <strong><?php echo $unique_ips; ?></strong></p>
++                <p>Obecnie zablokowanych IP: <strong><?php echo esc_html( $total_blocked ); ?></strong></p>
++                <p>Wszystkich zapisanych prób: <strong><?php echo esc_html( $total_attempts ); ?></strong></p>
++                <p>Unikalnych adresów IP: <strong><?php echo esc_html( $unique_ips ); ?></strong></p>
+             </div>
+         </div>
+         <?php
+
+--- /mnt/data/plugin_diff_run/wordpress-login-blocker-main_original/includes/class-admin.php
++++ /mnt/data/plugin_diff_run/wordpress-login-blocker-main/includes/class-admin.php
+@@ -340,8 +340,8 @@
+                                         <td><?php echo esc_html($ip->last_attempt); ?></td>
+                                         <td><?php echo esc_html($ip->block_until); ?></td>
+                                         <td>
+-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
+-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
++                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button">Odblokuj</a>
++                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
+                                         </td>
+                                     </tr>
+                                 <?php endforeach; ?>
+@@ -357,7 +357,7 @@
+                 <h2>Ostatnie próby logowania (ostatnie 100)</h2>
+                 <?php if ($all_attempts): ?>
+                     <div style="margin-bottom: 15px;">
+-                        <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete_all'), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE rekordy?')">Wyczyść wszystkie rekordy</a>
++                        <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete_all'), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE rekordy?')">Wyczyść wszystkie rekordy</a>
+                     </div>
+                     <div style="overflow-x: auto; width: auto;">
+                         <table class="wp-list-table widefat fixed striped" style="width: 100%; min-width: 900px;">
+@@ -387,9 +387,9 @@
+                                         </td>
+                                         <td>
+                                             <?php if ($attempt->is_blocked): ?>
+-                                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
++                                                <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button">Odblokuj</a>
+                                             <?php endif; ?>
+-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
++                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
+                                         </td>
+                                     </tr>
+                                 <?php endforeach; ?>
+
+--- /mnt/data/plugin_diff_run/wordpress-login-blocker-main_original/includes/class-updater.php
++++ /mnt/data/plugin_diff_run/wordpress-login-blocker-main/includes/class-updater.php
+@@ -1,4 +1,15 @@
+ <?php
++// SECURITY: Ensure action handlers verify capability and nonce.
++if ( (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'login_blocker') !== false) ) {
++    if ( ! current_user_can( 'manage_options' ) ) {
++        wp_die( 'Brak dostępu' );
++    }
++    if ( isset($_REQUEST['_wpnonce']) ) {
++        check_admin_referer( 'login_blocker_action' );
++    }
++}
++
++
+ /**
+  * Login Blocker - Updater Class
+  * Handles automatic updates from GitHub
