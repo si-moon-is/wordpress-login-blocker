@@ -340,8 +340,8 @@ class LoginBlocker_Admin {
                                         <td><?php echo esc_html($ip->last_attempt); ?></td>
                                         <td><?php echo esc_html($ip->block_until); ?></td>
                                         <td>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
+                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button">Odblokuj</a>
+                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -357,7 +357,7 @@ class LoginBlocker_Admin {
                 <h2>Ostatnie próby logowania (ostatnie 100)</h2>
                 <?php if ($all_attempts): ?>
                     <div style="margin-bottom: 15px;">
-                        <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete_all'), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE rekordy?')">Wyczyść wszystkie rekordy</a>
+                        <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete_all'), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE rekordy?')">Wyczyść wszystkie rekordy</a>
                     </div>
                     <div style="overflow-x: auto; width: auto;">
                         <table class="wp-list-table widefat fixed striped" style="width: 100%; min-width: 900px;">
@@ -387,9 +387,9 @@ class LoginBlocker_Admin {
                                         </td>
                                         <td>
                                             <?php if ($attempt->is_blocked): ?>
-                                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
+                                                <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button">Odblokuj</a>
                                             <?php endif; ?>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
+                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
