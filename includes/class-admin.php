@@ -601,4 +601,47 @@ To jest automatyczna wiadomość testowa.
     
     wp_send_json_success($stats);
 }
+
+    /**
+ * Obsługa żądań eksportu z admin-post.php
+ */
+public function handle_export_request() {
+    // Sprawdź nonce
+    if (!isset($_POST['export_nonce']) || !wp_verify_nonce($_POST['export_nonce'], 'login_blocker_export')) {
+        wp_die('Błąd bezpieczeństwa: Nieprawidłowy nonce');
+    }
+    
+    // Sprawdź uprawnienia
+    if (!current_user_can('export')) {
+        wp_die('Brak uprawnień do eksportu');
+    }
+    
+    // Pobierz parametry
+    $type = sanitize_text_field($_POST['type'] ?? 'data');
+    $format = sanitize_text_field($_POST['format'] ?? 'csv');
+    $period = intval($_POST['period'] ?? 30);
+    
+    // Załaduj i wykonaj eksport
+    require_once LOGIN_BLOCKER_PLUGIN_PATH . 'includes/class-exporter.php';
+    $exporter = new LoginBlocker_Exporter();
+    
+    if ($type === 'stats') {
+        $result = $exporter->export_stats($period);
+    } else {
+        $result = $exporter->export($format, $period);
+    }
+    
+    if (!$result) {
+        wp_die('Eksport nie powiódł się. Sprawdź logi błędów.');
+    }
+    
+    exit;
+}
+
+/**
+ * Blokada eksportu dla niezalogowanych użytkowników
+ */
+public function deny_export() {
+    wp_die('Dostęp zabroniony. Zaloguj się aby eksportować dane.');
+}
 }
