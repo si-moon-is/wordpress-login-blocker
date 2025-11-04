@@ -605,18 +605,41 @@ To jest automatyczna wiadomość testowa.
     /**
  * Obsługa żądań eksportu z admin-post.php
  */
+/**
+ * Obsługa żądań eksportu z admin-post.php
+ */
 public function handle_export_request() {
+    // DEBUG: Zapisz do logów co przychodzi
+    error_log('=== LOGIN BLOCKER EXPORT DEBUG ===');
+    error_log('POST: ' . print_r($_POST, true));
+    error_log('GET: ' . print_r($_GET, true));
+    error_log('REQUEST: ' . print_r($_REQUEST, true));
+    
     // Sprawdź nonce - zarówno POST jak i GET
-    $nonce = $_POST['export_nonce'] ?? ($_GET['export_nonce'] ?? '');
+    $nonce = $_POST['export_nonce'] ?? ($_GET['export_nonce'] ?? ($_REQUEST['_wpnonce'] ?? ''));
+    
+    error_log('Nonce received: ' . $nonce);
+    error_log('Nonce expected: ' . wp_create_nonce('login_blocker_export'));
+    
+    if (empty($nonce)) {
+        error_log('ERROR: No nonce provided');
+        wp_die('Błąd bezpieczeństwa: Brak tokena zabezpieczającego. Spróbuj ponownie.');
+    }
     
     if (!wp_verify_nonce($nonce, 'login_blocker_export')) {
-        wp_die('Błąd bezpieczeństwa: Nieprawidłowy lub wygasły nonce. Spróbuj ponownie.');
+        error_log('ERROR: Nonce verification failed');
+        wp_die('Błąd bezpieczeństwa: Nieprawidłowy lub wygasły token. Spróbuj ponownie.');
     }
+    
+    error_log('Nonce verification PASSED');
     
     // Sprawdź uprawnienia
     if (!current_user_can('export')) {
+        error_log('ERROR: User does not have export capability');
         wp_die('Brak uprawnień do eksportu danych.');
     }
+    
+    error_log('User capability check PASSED');
     
     // Pobierz parametry - zarówno POST jak i GET
     $type = sanitize_text_field($_POST['type'] ?? ($_GET['type'] ?? 'data'));
@@ -624,7 +647,7 @@ public function handle_export_request() {
     $period = intval($_POST['period'] ?? ($_GET['period'] ?? 30));
     $log_file = sanitize_text_field($_GET['log_file'] ?? '');
     
-    error_log("Login Blocker Export: Type=$type, Format=$format, Period=$period, LogFile=$log_file");
+    error_log("Export parameters - Type: $type, Format: $format, Period: $period, LogFile: $log_file");
     
     // Załaduj eksportera
     require_once LOGIN_BLOCKER_PLUGIN_PATH . 'includes/class-exporter.php';
@@ -633,23 +656,28 @@ public function handle_export_request() {
     try {
         switch ($type) {
             case 'stats':
+                error_log('Starting stats export');
                 $result = $exporter->export_stats($period);
                 break;
                 
             case 'logs':
+                error_log('Starting logs export');
                 // Obsługa eksportu pojedynczego pliku logów
                 if (!empty($log_file)) {
+                    error_log('Exporting single log file: ' . $log_file);
                     $this->export_log_file($log_file);
                 } else {
                     // Eksport wszystkich logów z formularza
                     $log_date = sanitize_text_field($_POST['log_date'] ?? '');
                     $log_level = sanitize_text_field($_POST['log_level'] ?? 'all');
+                    error_log('Exporting filtered logs - Date: ' . $log_date . ', Level: ' . $log_level);
                     $this->export_logs_filtered($log_date, $log_level);
                 }
                 break;
                 
             case 'data':
             default:
+                error_log('Starting data export');
                 $result = $exporter->export($format, $period);
                 break;
         }
@@ -658,7 +686,10 @@ public function handle_export_request() {
             throw new Exception('Eksport zakończył się niepowodzeniem');
         }
         
+        error_log('Export completed successfully');
+        
     } catch (Exception $e) {
+        error_log('Export ERROR: ' . $e->getMessage());
         wp_die('Błąd eksportu: ' . $e->getMessage());
     }
     
