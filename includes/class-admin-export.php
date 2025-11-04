@@ -330,17 +330,18 @@ class LoginBlocker_Admin_Export {
                         <p><?php echo esc_html__('Kliknij na nazwę pliku, aby pobrać:', 'login-blocker'); ?></p>
                         <ul class="log-files-list">
                             <?php foreach ($log_files as $log_file): 
-                                $file_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
-                                $file_size = file_exists($file_path) ? size_format(filesize($file_path), 2) : '0 B';
-                            ?>
-                                <li>
-                                    <a href="<?php echo esc_url(admin_url('admin-post.php?action=login_blocker_export&type=logs&log_file=' . urlencode($log_file) . '&export_nonce=' . wp_create_nonce('login_blocker_export'))); ?>" class="log-file-link">
-                                    <span class="dashicons dashicons-media-text"></span>
-                                    <?php echo esc_html($log_file); ?> 
-                                    <span class="file-size">(<?php echo $file_size; ?>)</span>
-                                    </a>
-                                </li>
-                            <?php endforeach; ?>
+    $file_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
+    $file_size = file_exists($file_path) ? size_format(filesize($file_path), 2) : '0 B';
+    $export_url = admin_url('admin-post.php?action=login_blocker_export&type=logs&log_file=' . urlencode($log_file) . '&export_nonce=' . wp_create_nonce('login_blocker_export'));
+?>
+    <li>
+        <a href="<?php echo esc_url($export_url); ?>" class="log-file-link">
+            <span class="dashicons dashicons-media-text"></span>
+            <?php echo esc_html($log_file); ?> 
+            <span class="file-size">(<?php echo $file_size; ?>)</span>
+        </a>
+    </li>
+<?php endforeach; ?>
                         </ul>
                     </div>
                 <?php else: ?>
