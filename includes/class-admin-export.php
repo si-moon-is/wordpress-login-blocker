@@ -70,7 +70,7 @@ class LoginBlocker_Admin_Export {
         <div class="login-blocker-tab-section">
             <div class="card">
                 <h3><?php echo esc_html__('Eksport Prób Logowania', 'login-blocker'); ?></h3>
-                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <form method="post" action="<?php echo wp_nonce_url(admin_url('admin-post.php?action=login_blocker_export'), 'login_blocker_export'); ?>">
                     <input type="hidden" name="action" value="login_blocker_export">
                     <input type="hidden" name="type" value="data">
                     <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
