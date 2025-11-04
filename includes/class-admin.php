@@ -46,6 +46,7 @@ class LoginBlocker_Admin {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('wp_ajax_login_blocker_get_system_info', array($this->debug, 'ajax_get_system_info'));
         add_action('wp_ajax_login_blocker_test_geolocation', array($this->debug, 'ajax_test_geolocation'));
+        add_action('wp_ajax_login_blocker_get_stats_preview', array($this, 'ajax_get_stats_preview'));
         
         // Ajax dla odblokowywania IP
         add_action('wp_ajax_unblock_ip', array($this, 'ajax_unblock_ip'));
@@ -560,5 +561,42 @@ To jest automatyczna wiadomość testowa.
     public function handle_geolocation_test() {
     $geolocation_class = new LoginBlocker_Geolocation();
     $geolocation_class->ajax_test_geolocation();
+}
+
+    public function ajax_get_stats_preview() {
+    if (!current_user_can('export')) {
+        wp_die('Brak uprawnień');
+    }
+    
+    if (!wp_verify_nonce($_POST['nonce'], 'login_blocker_export')) {
+        wp_die('Błąd bezpieczeństwa');
+    }
+    
+    $period = intval($_POST['period'] ?? 30);
+    $start_date = date('Y-m-d', strtotime("-$period days"));
+    
+    global $wpdb;
+    $table_name = $this->get_table_name();
+    
+    $stats = array(
+        'total_attempts' => $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_name} WHERE last_attempt >= %s",
+            $start_date
+        )),
+        'blocked_attempts' => $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_name} WHERE is_blocked = 1 AND last_attempt >= %s",
+            $start_date
+        )),
+        'unique_ips' => $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT ip_address) FROM {$table_name} WHERE last_attempt >= %s",
+            $start_date
+        )),
+        'unique_countries' => $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT country_code) FROM {$table_name} WHERE country_code != '' AND last_attempt >= %s",
+            $start_date
+        ))
+    );
+    
+    wp_send_json_success($stats);
 }
 }
