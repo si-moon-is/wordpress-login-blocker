@@ -107,17 +107,17 @@ class LoginBlocker {
         $this->table_name = $wpdb->prefix . 'login_blocker_attempts';
 
         // ładowanie class
-        require_once plugin_dir_path(__FILE__) . 'includes/class-updater.php';
-        require_once plugin_dir_path(__FILE__) . 'includes/class-database.php';
+        //require_once plugin_dir_path(__FILE__) . 'includes/class-updater.php';
+        //require_once plugin_dir_path(__FILE__) . 'includes/class-database.php';
 
         // Pobieranie ustawień
         $this->max_attempts = get_option('login_blocker_max_attempts', 5);
         $this->block_duration = get_option('login_blocker_block_duration', 3600);
         $this->debug_mode = LOGIN_BLOCKER_DEBUG;
-        $this->init_updater();
+        //$this->init_updater();
 
         // Inicjalizacja klas
-        $this->database = new LoginBlocker_Database();
+        //$this->database = new LoginBlocker_Database();
 
         add_action('plugins_loaded', array($this, 'load_textdomain'));
 
@@ -149,12 +149,18 @@ class LoginBlocker {
             update_option('login_blocker_first_run', false);
         }
 
+        require_once plugin_dir_path(__FILE__) . 'includes/class-updater.php';
+        require_once plugin_dir_path(__FILE__) . 'includes/class-database.php';
         require_once plugin_dir_path(__FILE__) . 'includes/class-geolocation.php';
         require_once plugin_dir_path(__FILE__) . 'includes/class-logger.php';
         require_once plugin_dir_path(__FILE__) . 'includes/class-email.php';
         require_once plugin_dir_path(__FILE__) . 'includes/ajax-handlers.php';
 
+        $this->database = new LoginBlocker_Database();
+
         new LoginBlocker_Ajax($this);
+        $this->database->create_table();
+        $this->init_updater();
     }
 
     /**
