@@ -26,7 +26,7 @@ class LoginBlocker_Admin_Export {
             
             <div class="card">
                 <h2><?php echo esc_html__('Eksport Prób Logowania', 'login-blocker'); ?></h2>
-                <form method="post" action="<?php echo admin_url('admin.php'); ?>">
+                <form method="post" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
                     <input type="hidden" name="login_blocker_export" value="1">
                     <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
                     <table class="form-table">
@@ -62,7 +62,7 @@ class LoginBlocker_Admin_Export {
 
             <div class="card">
                 <h2><?php echo esc_html__('Eksport Statystyk', 'login-blocker'); ?></h2>
-                <form method="post" action="<?php echo admin_url('admin.php'); ?>">
+                <form method="post" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
                     <input type="hidden" name="login_blocker_export" value="1">
                     <input type="hidden" name="type" value="stats">
                     <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
