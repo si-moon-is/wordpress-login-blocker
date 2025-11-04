@@ -88,13 +88,13 @@ class LoginBlocker_Admin_Blocked {
             
             <!-- Formularz wyszukiwania -->
             <div class="card" style="margin-bottom: 20px;">
-                <form method="get" action="<?php echo admin_url('admin.php'); ?>">
+                <form method="get" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
                     <input type="hidden" name="page" value="login-blocker-blocked">
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <input type="text" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Wyszukaj adres IP..." style="width: 300px;">
                         <button type="submit" class="button button-primary">Szukaj</button>
                         <?php if (!empty($search)): ?>
-                            <a href="<?php echo admin_url('admin.php?page=login-blocker-blocked'); ?>" class="button">Wyczyść</a>
+                            <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-blocked') ); ?>" class="button">Wyczyść</a>
                         <?php endif; ?>
                     </div>
                 </form>
@@ -103,7 +103,7 @@ class LoginBlocker_Admin_Blocked {
             <!-- Statystyki -->
             <div class="card" style="margin-bottom: 20px;">
                 <h3>Statystyki</h3>
-                <p>Znaleziono: <strong><?php echo $total_blocked; ?></strong> zablokowanych adresów IP</p>
+                <p>Znaleziono: <strong><?php echo esc_html( $total_blocked ); ?></strong> zablokowanych adresów IP</p>
                 <?php if (!empty($search)): ?>
                     <p>Wyniki wyszukiwania dla: <code><?php echo esc_html($search); ?></code></p>
                 <?php endif; ?>
@@ -113,12 +113,12 @@ class LoginBlocker_Admin_Blocked {
             <div class="card" style="margin-bottom: 20px;">
                 <h3>Akcje</h3>
                 <div style="display: flex; gap: 10px;">
-                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock_all'), 'login_blocker_action'); ?>" 
+                    <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock_all'), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
                        class="button" 
                        onclick="return confirm('Czy na pewno chcesz odblokować WSZYSTKIE adresy IP?')">
                        Odblokuj wszystkie
                     </a>
-                    <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete_all_blocked'), 'login_blocker_action'); ?>" 
+                    <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete_all_blocked'), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
                        class="button button-danger" 
                        onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE zablokowane rekordy?')">
                        Usuń wszystkie zablokowane
@@ -163,8 +163,8 @@ class LoginBlocker_Admin_Blocked {
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
+                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button">Odblokuj</a>
+                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
