@@ -60,6 +60,10 @@ function lb_ajax_handle_action() {
     wp_send_json_success( array( 'message' => __( 'Action processed', 'login-blocker' ) ) );
 }
 
+if ( isset($_REQUEST['_wpnonce']) ) {
+        check_admin_referer( 'login_blocker_action' );
+    }
+
 /**
  * Plugin Name: Login Blocker
  * Description: Blokuje IP po nieudanych próbach logowania z własnym panelem administracyjnym
@@ -106,17 +110,29 @@ class LoginBlocker {
         global $wpdb;
         $this->table_name = $wpdb->prefix . 'login_blocker_attempts';
 
+        // ładowanie class
+        require_once plugin_dir_path(__FILE__) . 'includes/class-updater.php';
+        require_once plugin_dir_path(__FILE__) . 'includes/class-database.php';
+
         // Pobieranie ustawień
         $this->max_attempts = get_option('login_blocker_max_attempts', 5);
         $this->block_duration = get_option('login_blocker_block_duration', 3600);
         $this->debug_mode = LOGIN_BLOCKER_DEBUG;
-        
+        $this->init_updater();
+
+        // Inicjalizacja klas
+        $this->database = new LoginBlocker_Database();
+
         add_action('plugins_loaded', array($this, 'load_textdomain'));
 
         // Rejestracja hooków
         add_action('plugins_loaded', array($this, 'init'));
         add_action('wp_login_failed', array($this, 'handle_failed_login'));
         add_filter('authenticate', array($this, 'check_ip_blocked'), 30, 3);
+
+        // Inicjalizacja admina
+        require_once plugin_dir_path(__FILE__) . 'includes/class-admin.php';
+        new LoginBlocker_Admin($this);
 
         // Cron do czyszczenia starych rekordów
         add_action('login_blocker_cleanup', array($this, 'cleanup_old_records'));
@@ -129,9 +145,6 @@ class LoginBlocker {
     }
 
     public function init() {
-
-        require_once plugin_dir_path(__FILE__) . 'includes/class-database.php';
-        $this->database = new LoginBlocker_Database();
         $this->database->create_table();
 
         // Debug bazy danych przy pierwszym uruchomieniu
@@ -140,36 +153,20 @@ class LoginBlocker {
             update_option('login_blocker_first_run', false);
         }
 
-        require_once plugin_dir_path(__FILE__) . 'includes/class-updater.php';
         require_once plugin_dir_path(__FILE__) . 'includes/class-geolocation.php';
         require_once plugin_dir_path(__FILE__) . 'includes/class-logger.php';
         require_once plugin_dir_path(__FILE__) . 'includes/class-email.php';
         require_once plugin_dir_path(__FILE__) . 'includes/ajax-handlers.php';
 
-        
         new LoginBlocker_Ajax($this);
-
-        $this->init_updater();
-
-        if (is_admin()) {
-        require_once plugin_dir_path(__FILE__) . 'includes/class-admin.php';
-        new LoginBlocker_Admin($this);
-    }
-            
     }
 
     /**
      * Getter dla klasy database
      */
     public function get_database() {
-    // Zabezpieczenie - jeśli database nie jest zainicjalizowane, zainicjuj je
-    if ($this->database === null) {
-        require_once plugin_dir_path(__FILE__) . 'includes/class-database.php';
-        $this->database = new LoginBlocker_Database();
-        $this->database->create_table();
+        return $this->database;
     }
-    return $this->database;
-}
     public function get_table_name() {
         global $wpdb;
         return $wpdb->prefix . 'login_blocker_attempts';
@@ -1636,7 +1633,6 @@ To jest automatyczna wiadomość z systemu Login Blocker.
     }
 }
 
-/**
 function login_blocker_handle_export_requests() {
     // Sprawdź czy to żądanie eksportu z formularza
     if (!isset($_POST['login_blocker_export']) && !isset($_GET['login_blocker_export'])) {
@@ -1676,7 +1672,7 @@ function login_blocker_handle_export_requests() {
 
     exit;
 }
-*/
+
 // Inicjalizacja wtyczki
 new LoginBlocker();
 
