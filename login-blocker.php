@@ -60,10 +60,6 @@ function lb_ajax_handle_action() {
     wp_send_json_success( array( 'message' => __( 'Action processed', 'login-blocker' ) ) );
 }
 
-if ( isset($_REQUEST['_wpnonce']) ) {
-        check_admin_referer( 'login_blocker_action' );
-    }
-
 /**
  * Plugin Name: Login Blocker
  * Description: Blokuje IP po nieudanych próbach logowania z własnym panelem administracyjnym
