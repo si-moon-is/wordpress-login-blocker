@@ -1636,6 +1636,7 @@ To jest automatyczna wiadomość z systemu Login Blocker.
     }
 }
 
+/**
 function login_blocker_handle_export_requests() {
     // Sprawdź czy to żądanie eksportu z formularza
     if (!isset($_POST['login_blocker_export']) && !isset($_GET['login_blocker_export'])) {
@@ -1675,7 +1676,7 @@ function login_blocker_handle_export_requests() {
 
     exit;
 }
-
+*/
 // Inicjalizacja wtyczki
 new LoginBlocker();
 
