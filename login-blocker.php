@@ -147,7 +147,7 @@ class LoginBlocker {
         require_once plugin_dir_path(__FILE__) . 'includes/ajax-handlers.php';
 
         
-        new LoginBlocker_Ajax($this)
+        new LoginBlocker_Ajax($this);
 
         $this->init_updater();
 
