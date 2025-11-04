@@ -40,9 +40,9 @@ class LoginBlocker_Admin_Settings {
                 $total_attempts = $wpdb->get_var("SELECT COUNT(*) FROM {$this->admin->get_table_name()}");
                 $unique_ips = $wpdb->get_var("SELECT COUNT(DISTINCT ip_address) FROM {$this->admin->get_table_name()}");
                 ?>
-                <p>Obecnie zablokowanych IP: <strong><?php echo $total_blocked; ?></strong></p>
-                <p>Wszystkich zapisanych prób: <strong><?php echo $total_attempts; ?></strong></p>
-                <p>Unikalnych adresów IP: <strong><?php echo $unique_ips; ?></strong></p>
+                <p>Obecnie zablokowanych IP: <strong><?php echo esc_html( $total_blocked ); ?></strong></p>
+                <p>Wszystkich zapisanych prób: <strong><?php echo esc_html( $total_attempts ); ?></strong></p>
+                <p>Unikalnych adresów IP: <strong><?php echo esc_html( $unique_ips ); ?></strong></p>
             </div>
         </div>
         <?php
