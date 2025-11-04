@@ -42,6 +42,8 @@ class LoginBlocker_Admin {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_bar_menu', array($this, 'add_admin_bar_menu'), 100);
+        add_action('admin_post_login_blocker_export', array($this, 'handle_export_request'));
+        add_action('admin_post_nopriv_login_blocker_export', array($this, 'deny_export'));
         add_action('wp_dashboard_setup', array($this, 'add_dashboard_widget'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('wp_ajax_login_blocker_get_system_info', array($this->debug, 'ajax_get_system_info'));
