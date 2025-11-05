@@ -1,15 +1,5 @@
 <?php
 /**
-if ( (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'login_blocker') !== false) ) {
-    if ( ! current_user_can( 'manage_options' ) ) {
-        wp_die( 'Brak dostępu' );
-    }
-    if ( isset($_REQUEST['_wpnonce']) ) {
-        check_admin_referer( 'login_blocker_action' );
-    }
-}
-*/
-/**
  * Login Blocker - Updater Class
  * Handles automatic updates from GitHub
  */
