@@ -58,7 +58,7 @@ class LoginBlocker_Admin_Debug {
             <!-- Tabulatory -->
             <h2 class="nav-tab-wrapper">
                 <?php foreach ($tabs as $tab_key => $tab_name): ?>
-                    <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-debug&tab=' . $tab_key) ); ?>" 
+                    <a href="<?php echo admin_url('admin.php?page=login-blocker-debug&tab=' . $tab_key); ?>" 
                        class="nav-tab <?php echo $current_tab === $tab_key ? 'nav-tab-active' : ''; ?>">
                        <?php echo esc_html($tab_name); ?>
                     </a>
@@ -137,7 +137,7 @@ class LoginBlocker_Admin_Debug {
                         <ul style="list-style: none; padding: 0; margin: 0;">
                             <?php foreach ($log_files as $log_file): ?>
                                 <li style="margin-bottom: 5px;">
-                                    <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-debug&tab=logs&log_file=' . urlencode($log_file)) ); ?>"
+                                    <a href="<?php echo admin_url('admin.php?page=login-blocker-debug&tab=logs&log_file=' . urlencode($log_file)); ?>" 
                                        style="display: block; padding: 8px; background: <?php echo $current_log === $log_file ? '#e0f0ff' : '#f6f7f7'; ?>; border-radius: 4px; text-decoration: none; font-size: 12px;"
                                        title="<?php echo esc_attr($this->get_log_file_info($log_file)); ?>">
                                         <strong><?php echo esc_html($log_file); ?></strong>
@@ -284,7 +284,7 @@ class LoginBlocker_Admin_Debug {
                                     <td><?php echo $this->get_log_file_mtime($log_file); ?></td>
                                     <td><?php echo $this->estimate_log_lines($log_file); ?></td>
                                     <td>
-                                        <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-debug&tab=logs&log_file=' . urlencode($log_file)) ); ?>"  
+                                        <a href="<?php echo admin_url('admin.php?page=login-blocker-debug&tab=logs&log_file=' . urlencode($log_file)); ?>" 
                                            class="button button-small">
                                            <span class="dashicons dashicons-visibility" style="vertical-align: middle;"></span>
                                            Przeglądaj
@@ -547,7 +547,7 @@ class LoginBlocker_Admin_Debug {
                         <?php echo get_option('login_blocker_error_notifications', true) ? 'WŁĄCZONE' : 'WYŁĄCZONE'; ?>
                     </p>
                     <p>
-                        <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-settings') ); ?>" class="button button-secondary">
+                        <a href="<?php echo admin_url('admin.php?page=login-blocker-settings'); ?>" class="button button-secondary">
                             Przejdź do Ustawień Email
                         </a>
                     </p>
@@ -770,28 +770,33 @@ public function ajax_test_geolocation() {
         wp_die('Błąd bezpieczeństwa');
     }
     
-    $test_ip = sanitize_text_field($_POST['test_ip'] ?? '8.8.8.8');
+    $test_ip = sanitize_text_field($_POST['test_ip']);
     
     if (empty($test_ip)) {
         wp_send_json_error('Brak adresu IP do testu');
         return;
     }
     
-    // Użyj funkcji geolokalizacji
-    $geolocation_class = new LoginBlocker_Geolocation();
-    $geolocation_data = $geolocation_class->get_location($test_ip);
+    // Użyj funkcji geolokalizacji z głównej klasy
+    $geolocation_data = $this->admin->get_main_class()->get_ip_geolocation($test_ip);
     
-    if ($geolocation_data && $geolocation_data['country_code'] !== 'XX') {
+    if ($geolocation_data) {
         $result = array(
             'ip' => $test_ip,
             'country_name' => $geolocation_data['country_name'] ?? null,
             'country_code' => $geolocation_data['country_code'] ?? null,
             'city' => $geolocation_data['city'] ?? null,
-            'region_name' => $geolocation_data['region'] ?? null,
+            'region_name' => $geolocation_data['region_name'] ?? null,
             'isp' => $geolocation_data['isp'] ?? null,
             'latitude' => $geolocation_data['latitude'] ?? null,
             'longitude' => $geolocation_data['longitude'] ?? null
         );
+        
+        // Log testu
+        $this->admin->get_main_class()->log_info("Test geolokalizacji wykonany", array(
+            'test_ip' => $test_ip,
+            'geolocation_data' => $result
+        ));
         
         wp_send_json_success($result);
     } else {
