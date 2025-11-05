@@ -14,7 +14,7 @@ class LoginBlocker_Geolocation {
     private $cache_duration;
     
     public function __construct() {
-        $this->cache_duration = DAY_IN_SECONDS * 6; // 6 godzin
+        $this->cache_duration = HOUR_IN_SECONDS * 6; // 6 godzin
     }
     
     public function get_location($ip) {
