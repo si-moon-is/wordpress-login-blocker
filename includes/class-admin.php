@@ -42,13 +42,10 @@ class LoginBlocker_Admin {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_bar_menu', array($this, 'add_admin_bar_menu'), 100);
-        add_action('admin_post_login_blocker_export', array($this, 'handle_export_request'));
-        add_action('admin_post_nopriv_login_blocker_export', array($this, 'deny_export'));
         add_action('wp_dashboard_setup', array($this, 'add_dashboard_widget'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('wp_ajax_login_blocker_get_system_info', array($this->debug, 'ajax_get_system_info'));
-        add_action('wp_ajax_login_blocker_test_geolocation', array($this->debug, 'ajax_test_geolocation'));
-        add_action('wp_ajax_login_blocker_get_stats_preview', array($this, 'ajax_get_stats_preview'));
+        add_action('wp_ajax_login_blocker_test_geolocation', array($this, 'handle_geolocation_test'));
         
         // Ajax dla odblokowywania IP
         add_action('wp_ajax_unblock_ip', array($this, 'ajax_unblock_ip'));
@@ -343,8 +340,8 @@ class LoginBlocker_Admin {
                                         <td><?php echo esc_html($ip->last_attempt); ?></td>
                                         <td><?php echo esc_html($ip->block_until); ?></td>
                                         <td>
-                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button">Odblokuj</a>
-                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -360,7 +357,7 @@ class LoginBlocker_Admin {
                 <h2>Ostatnie próby logowania (ostatnie 100)</h2>
                 <?php if ($all_attempts): ?>
                     <div style="margin-bottom: 15px;">
-                        <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete_all'), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE rekordy?')">Wyczyść wszystkie rekordy</a>
+                        <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete_all'), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć WSZYSTKIE rekordy?')">Wyczyść wszystkie rekordy</a>
                     </div>
                     <div style="overflow-x: auto; width: auto;">
                         <table class="wp-list-table widefat fixed striped" style="width: 100%; min-width: 900px;">
@@ -390,9 +387,9 @@ class LoginBlocker_Admin {
                                         </td>
                                         <td>
                                             <?php if ($attempt->is_blocked): ?>
-                                                <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button">Odblokuj</a>
+                                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" class="button">Odblokuj</a>
                                             <?php endif; ?>
-                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" class="button button-danger" onclick="return confirm('Czy na pewno chcesz usunąć?')">Usuń</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -563,202 +560,5 @@ To jest automatyczna wiadomość testowa.
     public function handle_geolocation_test() {
     $geolocation_class = new LoginBlocker_Geolocation();
     $geolocation_class->ajax_test_geolocation();
-}
-
-    public function ajax_get_stats_preview() {
-    if (!current_user_can('export')) {
-        wp_die('Brak uprawnień');
-    }
-    
-    if (!wp_verify_nonce($_POST['nonce'], 'login_blocker_export')) {
-        wp_die('Błąd bezpieczeństwa');
-    }
-    
-    $period = intval($_POST['period'] ?? 30);
-    $start_date = date('Y-m-d', strtotime("-$period days"));
-    
-    global $wpdb;
-    $table_name = $this->get_table_name();
-    
-    $stats = array(
-        'total_attempts' => $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table_name} WHERE last_attempt >= %s",
-            $start_date
-        )),
-        'blocked_attempts' => $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table_name} WHERE is_blocked = 1 AND last_attempt >= %s",
-            $start_date
-        )),
-        'unique_ips' => $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(DISTINCT ip_address) FROM {$table_name} WHERE last_attempt >= %s",
-            $start_date
-        )),
-        'unique_countries' => $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(DISTINCT country_code) FROM {$table_name} WHERE country_code != '' AND last_attempt >= %s",
-            $start_date
-        ))
-    );
-    
-    wp_send_json_success($stats);
-}
-
-    /**
- * Obsługa żądań eksportu z admin-post.php
- */
-/**
- * Obsługa żądań eksportu z admin-post.php
- */
-public function handle_export_request() {
-    // DEBUG: Zapisz do logów co przychodzi
-    error_log('=== LOGIN BLOCKER EXPORT DEBUG ===');
-    error_log('POST: ' . print_r($_POST, true));
-    error_log('GET: ' . print_r($_GET, true));
-    error_log('REQUEST: ' . print_r($_REQUEST, true));
-    
-    // Sprawdź nonce - zarówno POST jak i GET
-    $nonce = $_POST['export_nonce'] ?? ($_GET['export_nonce'] ?? ($_REQUEST['_wpnonce'] ?? ''));
-    
-    error_log('Nonce received: ' . $nonce);
-    error_log('Nonce expected: ' . wp_create_nonce('login_blocker_export'));
-    
-    if (empty($nonce)) {
-        error_log('ERROR: No nonce provided');
-        wp_die('Błąd bezpieczeństwa: Brak tokena zabezpieczającego. Spróbuj ponownie.');
-    }
-    
-    if (!wp_verify_nonce($nonce, 'login_blocker_export')) {
-        error_log('ERROR: Nonce verification failed');
-        wp_die('Błąd bezpieczeństwa: Nieprawidłowy lub wygasły token. Spróbuj ponownie.');
-    }
-    
-    error_log('Nonce verification PASSED');
-    
-    // Sprawdź uprawnienia
-    if (!current_user_can('export')) {
-        error_log('ERROR: User does not have export capability');
-        wp_die('Brak uprawnień do eksportu danych.');
-    }
-    
-    error_log('User capability check PASSED');
-    
-    // Pobierz parametry - zarówno POST jak i GET
-    $type = sanitize_text_field($_POST['type'] ?? ($_GET['type'] ?? 'data'));
-    $format = sanitize_text_field($_POST['format'] ?? ($_GET['format'] ?? 'csv'));
-    $period = intval($_POST['period'] ?? ($_GET['period'] ?? 30));
-    $log_file = sanitize_text_field($_GET['log_file'] ?? '');
-    
-    error_log("Export parameters - Type: $type, Format: $format, Period: $period, LogFile: $log_file");
-    
-    // Załaduj eksportera
-    require_once LOGIN_BLOCKER_PLUGIN_PATH . 'includes/class-exporter.php';
-    $exporter = new LoginBlocker_Exporter();
-    
-    try {
-        switch ($type) {
-            case 'stats':
-                error_log('Starting stats export');
-                $result = $exporter->export_stats($period);
-                break;
-                
-            case 'logs':
-                error_log('Starting logs export');
-                // Obsługa eksportu pojedynczego pliku logów
-                if (!empty($log_file)) {
-                    error_log('Exporting single log file: ' . $log_file);
-                    $this->export_log_file($log_file);
-                } else {
-                    // Eksport wszystkich logów z formularza
-                    $log_date = sanitize_text_field($_POST['log_date'] ?? '');
-                    $log_level = sanitize_text_field($_POST['log_level'] ?? 'all');
-                    error_log('Exporting filtered logs - Date: ' . $log_date . ', Level: ' . $log_level);
-                    $this->export_logs_filtered($log_date, $log_level);
-                }
-                break;
-                
-            case 'data':
-            default:
-                error_log('Starting data export');
-                $result = $exporter->export($format, $period);
-                break;
-        }
-        
-        if (isset($result) && !$result) {
-            throw new Exception('Eksport zakończył się niepowodzeniem');
-        }
-        
-        error_log('Export completed successfully');
-        
-    } catch (Exception $e) {
-        error_log('Export ERROR: ' . $e->getMessage());
-        wp_die('Błąd eksportu: ' . $e->getMessage());
-    }
-    
-    exit;
-}
-    /**
- * Eksport pojedynczego pliku logów
- */
-private function export_log_file($log_file) {
-    $log_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
-    
-    if (!file_exists($log_path)) {
-        wp_die('Plik logów nie istnieje: ' . esc_html($log_file));
-    }
-    
-    // Zabezpieczenie przed path traversal
-    $real_log_path = realpath($log_path);
-    $real_log_dir = realpath(LOGIN_BLOCKER_LOG_PATH);
-    
-    if (strpos($real_log_path, $real_log_dir) !== 0) {
-        wp_die('Nieprawidłowa ścieżka pliku');
-    }
-    
-    $file_size = filesize($log_path);
-    $file_name = basename($log_file);
-    
-    header('Content-Type: text/plain; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $file_name . '"');
-    header('Content-Length: ' . $file_size);
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    
-    readfile($log_path);
-    exit;
-}
-
-/**
- * Eksport logów z filtrami (z formularza)
- */
-private function export_logs_filtered($log_date, $log_level) {
-    $log_files = $this->main_class->get_log_files();
-    
-    if (empty($log_files)) {
-        wp_die('Brak plików logów do eksportu.');
-    }
-    
-    $filename = 'login-blocker-logs-' . date('Y-m-d') . '.txt';
-    
-    header('Content-Type: text/plain; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-    
-    foreach ($log_files as $log_file) {
-        // Tutaj możesz dodać filtrowanie według daty i poziomu
-        $log_path = LOGIN_BLOCKER_LOG_PATH . $log_file;
-        if (file_exists($log_path)) {
-            echo "=== File: {$log_file} ===\n";
-            echo file_get_contents($log_path);
-            echo "\n\n";
-        }
-    }
-    exit;
-}
-
-/**
- * Blokada eksportu dla niezalogowanych użytkowników
- */
-public function deny_export() {
-    wp_die('Dostęp zabroniony. Zaloguj się aby eksportować dane.');
 }
 }
