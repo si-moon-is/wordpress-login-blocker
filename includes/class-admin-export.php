@@ -9,13 +9,13 @@ if (!defined('ABSPATH')) {
 }
 
 class LoginBlocker_Admin_Export {
-
+    
     private $admin;
-
+    
     public function __construct($admin) {
         $this->admin = $admin;
     }
-
+    
     public function export_page() {
         if (!current_user_can('export')) {
             wp_die(esc_html__('Brak uprawnień', 'login-blocker'));
@@ -23,10 +23,10 @@ class LoginBlocker_Admin_Export {
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Eksport Danych Login Blocker', 'login-blocker'); ?></h1>
-
+            
             <div class="card">
                 <h2><?php echo esc_html__('Eksport Prób Logowania', 'login-blocker'); ?></h2>
-                <form method="post" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
+                <form method="post" action="<?php echo admin_url('admin.php'); ?>">
                     <input type="hidden" name="login_blocker_export" value="1">
                     <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
                     <table class="form-table">
@@ -46,7 +46,7 @@ class LoginBlocker_Admin_Export {
                                 <label for="export-period"><?php echo esc_html__('Okres (dni)', 'login-blocker'); ?></label>
                             </th>
                             <td>
-                                <input type="number" name="period" id="export-period"
+                                <input type="number" name="period" id="export-period" 
                                        min="1" max="365" value="30" required>
                                 <p class="description"><?php echo esc_html__('Dane z ostatnich X dni', 'login-blocker'); ?></p>
                             </td>
@@ -62,7 +62,7 @@ class LoginBlocker_Admin_Export {
 
             <div class="card">
                 <h2><?php echo esc_html__('Eksport Statystyk', 'login-blocker'); ?></h2>
-                <form method="post" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
+                <form method="post" action="<?php echo admin_url('admin.php'); ?>">
                     <input type="hidden" name="login_blocker_export" value="1">
                     <input type="hidden" name="type" value="stats">
                     <?php wp_nonce_field('login_blocker_export', 'export_nonce'); ?>
@@ -72,7 +72,7 @@ class LoginBlocker_Admin_Export {
                                 <label for="stats-period"><?php echo esc_html__('Okres (dni)', 'login-blocker'); ?></label>
                             </th>
                             <td>
-                                <input type="number" name="period" id="stats-period"
+                                <input type="number" name="period" id="stats-period" 
                                        min="1" max="365" value="30" required>
                             </td>
                         </tr>
