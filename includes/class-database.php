@@ -191,56 +191,6 @@ class LoginBlocker_Database {
         );
     }
     
-    // =========================================================================
-    // NOWE METODY DO PAGINACJI - DODANE PONIŻEJ
-    // =========================================================================
-    
-    /**
-     * Pobiera próby logowania z paginacją
-     */
-    public function get_attempts($limit = 50, $offset = 0, $search = '') {
-        global $wpdb;
-        
-        $search_sql = '';
-        if (!empty($search)) {
-            $search_sql = $wpdb->prepare(" AND (ip_address LIKE %s OR username LIKE %s)", 
-                '%' . $wpdb->esc_like($search) . '%',
-                '%' . $wpdb->esc_like($search) . '%'
-            );
-        }
-        
-        return $wpdb->get_results($wpdb->prepare("
-            SELECT * FROM {$this->table_name} 
-            WHERE 1=1 {$search_sql}
-            ORDER BY last_attempt DESC 
-            LIMIT %d OFFSET %d
-        ", $limit, $offset));
-    }
-    
-    /**
-     * Liczba wszystkich prób (dla paginacji)
-     */
-    public function count_attempts($search = '') {
-        global $wpdb;
-        
-        $search_sql = '';
-        if (!empty($search)) {
-            $search_sql = $wpdb->prepare(" AND (ip_address LIKE %s OR username LIKE %s)", 
-                '%' . $wpdb->esc_like($search) . '%',
-                '%' . $wpdb->esc_like($search) . '%'
-            );
-        }
-        
-        return $wpdb->get_var("
-            SELECT COUNT(*) FROM {$this->table_name} 
-            WHERE 1=1 {$search_sql}
-        ");
-    }
-    
-    // =========================================================================
-    // ISTNIEJĄCE METODY - POZOSTAJĄ BEZ ZMIAN
-    // =========================================================================
-    
     /**
      * Pobiera ostatnie próby logowania
      */
@@ -382,7 +332,7 @@ class LoginBlocker_Database {
     }
     
     /**
-     * Pobiera najczęściej atakowanych użytkownicy
+     * Pobiera najczęściej atakowanych użytkowników
      */
     public function get_top_users($period_days = 30, $limit = 8) {
         global $wpdb;
