@@ -1,12 +1,4 @@
 <?php
-if ( (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'login_blocker') !== false) ) {
-    if ( ! current_user_can( 'manage_options' ) ) {
-        wp_die( 'Brak dostępu' );
-    }
-    if ( isset($_REQUEST['_wpnonce']) ) {
-        check_admin_referer( 'login_blocker_action' );
-    }
-}
 /**
  * Login Blocker - Admin Analytics Class
  * Handles analytics and statistics functionality
@@ -47,7 +39,7 @@ class LoginBlocker_Admin_Analytics {
             <!-- Filtry okresu czasu -->
             <div class="card" style="margin-bottom: 20px;">
                 <h3>Filtruj statystyki</h3>
-                <form method="get" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
+                <form method="get" action="<?php echo admin_url('admin.php'); ?>">
                     <input type="hidden" name="page" value="login-blocker-analytics">
                     <input type="hidden" name="tab" value="<?php echo esc_attr($current_tab); ?>">
                     <label for="period">Okres czasu:</label>
@@ -63,7 +55,7 @@ class LoginBlocker_Admin_Analytics {
             <!-- Tabulatory -->
             <h2 class="nav-tab-wrapper">
                 <?php foreach ($tabs as $tab_key => $tab_name): ?>
-                    <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-analytics&tab=' . $tab_key . '&period=' . $period) ); ?>" 
+                    <a href="<?php echo admin_url('admin.php?page=login-blocker-analytics&tab=' . $tab_key . '&period=' . $period); ?>" 
                        class="nav-tab <?php echo $current_tab === $tab_key ? 'nav-tab-active' : ''; ?>">
                        <?php echo esc_html($tab_name); ?>
                     </a>
@@ -145,164 +137,90 @@ class LoginBlocker_Admin_Analytics {
     }
 
     public function display_attempts_tab($period) {
-    global $wpdb;
-    
-    // Paginacja
-    $per_page = 50;
-    $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-    $offset = ($current_page - 1) * $per_page;
-    
-    // Wyszukiwanie
-    $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
-    
-    // Użyj metody z paginacją
-    $recent_attempts = $this->admin->get_database()->get_attempts($per_page, $offset, $search);
-    $total_attempts = $this->admin->get_database()->count_attempts($search);
-    $total_pages = ceil($total_attempts / $per_page);
-    
-    ?>
-    <div class="card">
-        <h3>Ostatnie próby logowania</h3>
+        global $wpdb;
         
-        <!-- Formularz wyszukiwania -->
-        <div style="margin-bottom: 20px;">
-            <form method="get" action="<?php echo esc_url( admin_url('admin.php') ); ?>">
-                <input type="hidden" name="page" value="login-blocker-analytics">
-                <input type="hidden" name="tab" value="attempts">
-                <input type="hidden" name="period" value="<?php echo esc_attr($period); ?>">
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Szukaj IP lub użytkownika..." style="width: 300px;">
-                    <button type="submit" class="button button-primary">Szukaj</button>
-                    <?php if (!empty($search)): ?>
-                        <a href="<?php echo esc_url( admin_url('admin.php?page=login-blocker-analytics&tab=attempts&period=' . $period) ); ?>" class="button">Wyczyść</a>
-                    <?php endif; ?>
-                </div>
-            </form>
-        </div>
-
-        <!-- Informacje o wynikach -->
-        <div style="margin-bottom: 15px;">
-            <p>
-                <?php if (!empty($search)): ?>
-                    Znaleziono <strong><?php echo number_format($total_attempts); ?></strong> rekordów dla: <code><?php echo esc_html($search); ?></code>
-                <?php else: ?>
-                    Łącznie <strong><?php echo number_format($total_attempts); ?></strong> rekordów
-                <?php endif; ?>
-            </p>
-        </div>
-        
-        <?php if ($recent_attempts): ?>
-            <div style="overflow-x: auto; max-height: 800px;">
-                <table class="wp-list-table widefat fixed striped" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>IP</th>
-                            <th>Użytkownik</th>
-                            <th>Próby</th>
-                            <th>Status</th>
-                            <th>Kraj</th>
-                            <th style="width: 100px;">Akcje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recent_attempts as $attempt): ?>
+        $recent_attempts = $wpdb->get_results(
+            "SELECT * FROM {$this->admin->get_table_name()} 
+             ORDER BY last_attempt DESC 
+             LIMIT 200"
+        );
+        ?>
+        <div class="card">
+            <h3>Ostatnie próby logowania (200)</h3>
+            <?php if ($recent_attempts): ?>
+                <div style="overflow-x: auto; max-height: 800px;">
+                    <table class="wp-list-table widefat fixed striped" style="width: 100%;">
+                        <thead>
                             <tr>
-                                <td><?php echo esc_html($attempt->last_attempt); ?></td>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 5px;">
-                                        <?php if (!empty($attempt->country_code) && $attempt->country_code !== 'LOCAL'): ?>
-                                            <?php 
-                                                $country_code_lower = strtolower($attempt->country_code);
-                                                $flag_url = "https://flagcdn.com/16x12/{$country_code_lower}.png";
-                                            ?>
-                                            <img src="<?php echo esc_url($flag_url); ?>" alt="<?php echo esc_attr($attempt->country_code); ?>" style="width: 16px; height: 12px;">
-                                        <?php endif; ?>
-                                        <span style="font-family: monospace; font-size: 12px;"><?php echo esc_html($attempt->ip_address); ?></span>
-                                    </div>
-                                </td>
-                                <td><?php echo esc_html($attempt->username); ?></td>
-                                <td>
-                                    <span style="font-weight: bold; color: <?php echo $attempt->attempts > 10 ? '#d63638' : '#0073aa'; ?>">
-                                        <?php echo esc_html($attempt->attempts); ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php if ($attempt->is_blocked): ?>
-                                        <span style="color: red; font-weight: bold; font-size: 12px;">BLOKADA</span>
-                                    <?php else: ?>
-                                        <span style="color: green; font-size: 12px;">aktywny</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php echo !empty($attempt->country_name) ? esc_html($attempt->country_name) : '—'; ?>
-                                </td>
-                                <td>
-                                    <div style="display: flex; gap: 2px; flex-wrap: wrap;">
-                                        <?php if ($attempt->is_blocked): ?>
-                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
-                                               class="button button-small" 
-                                               title="Odblokuj IP">
-                                               Odblokuj
-                                            </a>
-                                        <?php endif; ?>
-                                        <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
-                                           class="button button-danger button-small" 
-                                           onclick="return confirm('Czy na pewno chcesz usunąć ten rekord?')"
-                                           title="Usuń rekord">
-                                           Usuń
-                                        </a>
-                                    </div>
-                                </td>
+                                <th>Data</th>
+                                <th>IP</th>
+                                <th>Użytkownik</th>
+                                <th>Próby</th>
+                                <th>Status</th>
+                                <th>Kraj</th>
+                                <th style="width: 100px;">Akcje</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Paginacja -->
-            <?php if ($total_pages > 1): ?>
-                <div class="tablenav" style="margin-top: 20px;">
-                    <div class="tablenav-pages">
-                        <?php
-                        $base_url = admin_url('admin.php?page=login-blocker-analytics&tab=attempts&period=' . $period);
-                        if (!empty($search)) {
-                            $base_url .= '&s=' . urlencode($search);
-                        }
-                        
-                        echo paginate_links(array(
-                            'base' => add_query_arg('paged', '%#%', $base_url),
-                            'format' => '',
-                            'prev_text' => '&laquo;',
-                            'next_text' => '&raquo;',
-                            'total' => $total_pages,
-                            'current' => $current_page,
-                            'show_all' => false,
-                            'end_size' => 1,
-                            'mid_size' => 2
-                        ));
-                        ?>
-                    </div>
-                    <div class="tablenav-pages" style="float: right; margin-top: 8px;">
-                        <span class="displaying-num">
-                            Wyświetlanie <?php echo number_format(($current_page - 1) * $per_page + 1); ?> - <?php echo number_format(min($current_page * $per_page, $total_attempts)); ?> z <?php echo number_format($total_attempts); ?>
-                        </span>
-                    </div>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($recent_attempts as $attempt): ?>
+                                <tr>
+                                    <td><?php echo esc_html($attempt->last_attempt); ?></td>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <?php if (!empty($attempt->country_code) && $attempt->country_code !== 'LOCAL'): ?>
+                                                <?php 
+                                                    $country_code_lower = strtolower($attempt->country_code);
+                                                    $flag_url = "https://flagcdn.com/16x12/{$country_code_lower}.png";
+                                                ?>
+                                                <img src="<?php echo $flag_url; ?>" alt="<?php echo esc_attr($attempt->country_code); ?>" style="width: 16px; height: 12px;">
+                                            <?php endif; ?>
+                                            <span style="font-family: monospace; font-size: 12px;"><?php echo esc_html($attempt->ip_address); ?></span>
+                                        </div>
+                                    </td>
+                                    <td><?php echo esc_html($attempt->username); ?></td>
+                                    <td>
+                                        <span style="font-weight: bold; color: <?php echo $attempt->attempts > 10 ? '#d63638' : '#0073aa'; ?>">
+                                            <?php echo esc_html($attempt->attempts); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ($attempt->is_blocked): ?>
+                                            <span style="color: red; font-weight: bold; font-size: 12px;">BLOKADA</span>
+                                        <?php else: ?>
+                                            <span style="color: green; font-size: 12px;">aktywny</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php echo !empty($attempt->country_name) ? esc_html($attempt->country_name) : '—'; ?>
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; gap: 2px; flex-wrap: wrap;">
+                                            <?php if ($attempt->is_blocked): ?>
+                                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" 
+                                                   class="button button-small" 
+                                                   title="Odblokuj IP">
+                                                   Odblokuj
+                                                </a>
+                                            <?php endif; ?>
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $attempt->ip_address), 'login_blocker_action'); ?>" 
+                                               class="button button-danger button-small" 
+                                               onclick="return confirm('Usunąć?')"
+                                               title="Usuń rekord">
+                                               Usuń
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
+            <?php else: ?>
+                <p>Brak zapisanych prób logowania.</p>
             <?php endif; ?>
-            
-        <?php else: ?>
-            <p>
-                <?php if (!empty($search)): ?>
-                    Brak wyników wyszukiwania dla: <code><?php echo esc_html($search); ?></code>
-                <?php else: ?>
-                    Brak zapisanych prób logowania.
-                <?php endif; ?>
-            </p>
-        <?php endif; ?>
-    </div>
-    <?php
-}
+        </div>
+        <?php
+    }
 
     public function display_charts_tab($period) {
         ?>
@@ -341,7 +259,7 @@ class LoginBlocker_Admin_Analytics {
         ", date('Y-m-d', strtotime("-$period days"))));
         ?>
         <div class="card">
-            <h3>Statystyki krajów (<?php echo esc_html( $period ); ?> dni)</h3>
+            <h3>Statystyki krajów (<?php echo $period; ?> dni)</h3>
             <?php if ($country_stats): ?>
                 <div style="overflow-x: auto;">
                     <table class="wp-list-table widefat fixed striped" style="width: 100%;">
@@ -363,7 +281,7 @@ class LoginBlocker_Admin_Analytics {
                                                     $country_code_lower = strtolower($country->country_code);
                                                     $flag_url = "https://flagcdn.com/24x18/{$country_code_lower}.png";
                                                 ?>
-                                                <img src="<?php echo esc_url($flag_url); ?>" alt="<?php echo esc_attr($country->country_code); ?>" style="width: 24px; height: 18px;">
+                                                <img src="<?php echo $flag_url; ?>" alt="<?php echo esc_attr($country->country_code); ?>" style="width: 24px; height: 18px;">
                                             <?php endif; ?>
                                             <span><?php echo esc_html($country->country_name ?: 'Nieznany'); ?></span>
                                             <code style="font-size: 11px; color: #666;"><?php echo esc_html($country->country_code); ?></code>
@@ -403,7 +321,7 @@ class LoginBlocker_Admin_Analytics {
         ", date('Y-m-d', strtotime("-$period days"))));
         ?>
         <div class="card">
-            <h3>Najczęściej atakowani użytkownicy (<?php echo esc_html( $period ); ?> dni)</h3>
+            <h3>Najczęściej atakowani użytkownicy (<?php echo $period; ?> dni)</h3>
             <?php if ($top_users): ?>
                 <div style="overflow-x: auto;">
                     <table class="wp-list-table widefat fixed striped" style="width: 100%;">
@@ -455,7 +373,7 @@ class LoginBlocker_Admin_Analytics {
         ", date('Y-m-d', strtotime("-$period days"))));
         ?>
         <div class="card">
-            <h3>Najaktywniejsze adresy IP (<?php echo esc_html( $period ); ?> dni)</h3>
+            <h3>Najaktywniejsze adresy IP (<?php echo $period; ?> dni)</h3>
             <?php if ($top_ips): ?>
                 <div style="overflow-x: auto;">
                     <table class="wp-list-table widefat fixed striped" style="width: 100%;">
@@ -479,7 +397,7 @@ class LoginBlocker_Admin_Analytics {
                                                     $country_code_lower = strtolower($ip->country_code);
                                                     $flag_url = "https://flagcdn.com/16x12/{$country_code_lower}.png";
                                                 ?>
-                                                <img src="<?php echo esc_url($flag_url); ?>" alt="<?php echo esc_attr($ip->country_code); ?>" title="<?php echo esc_attr($ip->country_name); ?>">
+                                                <img src="<?php echo $flag_url; ?>" alt="<?php echo esc_attr($ip->country_code); ?>" title="<?php echo esc_attr($ip->country_name); ?>">
                                             <?php endif; ?>
                                             <span>
                                                 <?php 
@@ -501,12 +419,12 @@ class LoginBlocker_Admin_Analytics {
                                     <td>
                                         <div style="display: flex; gap: 2px;">
                                             <?php if ($ip->is_blocked): ?>
-                                                <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>"
+                                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=unblock&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" 
                                                    class="button button-small">
                                                    Odblokuj
                                                 </a>
                                             <?php endif; ?>
-                                            <a href="<?php echo esc_url( wp_nonce_url( wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'), 'login_blocker_action' ) ); ?>" 
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=login-blocker-blocked&action=delete&ip=' . $ip->ip_address), 'login_blocker_action'); ?>" 
                                                class="button button-danger button-small" 
                                                onclick="return confirm('Usunąć?')">
                                                Usuń
@@ -528,7 +446,7 @@ class LoginBlocker_Admin_Analytics {
     public function display_map_tab($period) {
         ?>
         <div class="card">
-            <h3>Mapa ataków (<?php echo esc_html( $period ); ?> dni)</h3>
+            <h3>Mapa ataków (<?php echo $period; ?> dni)</h3>
             <?php $this->admin->get_main_class()->display_attack_map($period); ?>
         </div>
         <?php
